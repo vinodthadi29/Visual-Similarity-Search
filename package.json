@@ -1,0 +1,23 @@
+{
+  "dependencies": {
+    "@radix-ui/react-slot": "^1.2.4",
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.5.0",
+    "@tabler/icons-react": "^3.39.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "framer-motion": "^12.35.0",
+    "lucide-react": "^0.577.0",
+    "motion": "^12.35.0",
+    "next": "^16.1.6",
+    "react-dropzone": "^15.0.0",
+    "react-wrap-balancer": "^1.1.1",
+    "tailwind-merge": "^3.5.0",
+    "three": "^0.183.2"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.5",
+    "@types/react": "^19.2.14",
+    "typescript": "^5.9.3"
+  }
+}

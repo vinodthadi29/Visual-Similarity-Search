@@ -1,0 +1,25 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# ML Models
+*.pt
+*.pth
+
+# Database
+*.db
+
+# Logs
+*.log
+
+# Next.js / Node
+node_modules/
+.next/
+
+# Env
+.env
+
+# Large files
+*.zip
+dataset/

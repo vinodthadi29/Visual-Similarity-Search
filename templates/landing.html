@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connect the World</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Inter:wght@300;400;500;600;700;900&display=swap"
+        rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        background: 'hsl(210, 60%, 4%)', /* Darker cool slate */
+                        foreground: 'hsl(200, 60%, 95%)', /* Icy cool white */
+                        primary: {
+                            DEFAULT: 'hsl(195, 90%, 55%)', /* Cool cyan/blue */
+                            foreground: 'hsl(210, 60%, 10%)'
+                        },
+                        muted: {
+                            DEFAULT: 'hsl(215, 40%, 15%)',
+                            foreground: 'hsl(210, 30%, 70%)'
+                        },
+                        accent: {
+                            DEFAULT: 'hsl(200, 80%, 30%)',
+                        },
+                        border: 'hsl(215, 40%, 20%)'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background-color: hsl(210, 60%, 4%);
+            color: hsl(200, 60%, 95%);
+            overflow-x: hidden;
+            margin: 0;
+        }
+
+        .animation-delay-500 {
+            animation-delay: 500ms;
+        }
+
+        /* Anime Navbar specific styles */
+        .anime-nav-wrapper {
+            position: fixed;
+            top: 1.5rem;
+            left: 0;
+            right: 0;
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+        }
+
+        .anime-pill {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(16px);
+            padding: 0.5rem 0.5rem;
+            border-radius: 9999px;
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+        }
+
+        .anime-link {
+            position: relative;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 600;
+            padding: 0.75rem 1.5rem;
+            border-radius: 9999px;
+            color: rgba(255, 255, 255, 0.7);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            overflow: hidden;
+        }
+
+        .anime-link:hover {
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .anime-link.active {
+            color: white;
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .anime-mascot {
+            position: absolute;
+            top: -45px;
+            width: 40px;
+            height: 40px;
+            background: white;
+            border-radius: 50%;
+            pointer-events: none;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            opacity: 0;
+            transform: scale(0.5);
+        }
+
+        .anime-mascot.visible {
+            opacity: 1;
+            transform: scale(1);
+            animation: mascot-bounce 2s infinite ease-in-out;
+        }
+
+        .mascot-eye {
+            position: absolute;
+            background: black;
+            width: 6px;
+            height: 8px;
+            border-radius: 50%;
+            top: 40%;
+        }
+
+        .mascot-eye.left {
+            left: 25%;
+        }
+
+        .mascot-eye.right {
+            right: 25%;
+        }
+
+        .mascot-blush {
+            position: absolute;
+            background: pink;
+            width: 8px;
+            height: 4px;
+            border-radius: 50%;
+            top: 55%;
+            opacity: 0.6;
+        }
+
+        .mascot-blush.left {
+            left: 15%;
+        }
+
+        .mascot-blush.right {
+            right: 15%;
+        }
+
+        .mascot-mouth {
+            position: absolute;
+            width: 12px;
+            height: 6px;
+            border-bottom: 2px solid black;
+            border-radius: 50%;
+            top: 60%;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        @keyframes mascot-bounce {
+
+            0%,
+            100% {
+                transform: translateY(0) scale(1);
+            }
+
+            50% {
+                transform: translateY(-3px) scale(1.02);
+            }
+        }
+
+        /* Hero Button Animations */
+        .btn-creative {
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .btn-creative:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3), 0 0 30px hsl(var(--primary) / 0.4);
+        }
+
+        .btn-creative:active {
+            transform: translateY(2px) scale(0.95);
+        }
+    </style>
+</head>
+
+<body class="bg-gradient-to-br from-background via-background/95 to-muted/10 relative overflow-hidden min-h-screen">
+
+    <!-- React Component Replica: DotGlobeHeroDemo -->
+    <div id="canvas-container" class="absolute inset-0 z-0 pointer-events-none"></div>
+
+    <div
+        class="absolute inset-0 bg-gradient-to-t from-background/50 via-transparent to-background/30 z-0 pointer-events-none">
+    </div>
+    <div
+        class="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-pulse z-0 pointer-events-none">
+    </div>
+    <div
+        class="absolute bottom-1/4 right-1/4 w-64 h-64 bg-primary/3 rounded-full blur-3xl animate-pulse z-0 pointer-events-none">
+    </div>
+
+    <!-- Professional Header Navbar with Anime Links -->
+    <header
+        class="absolute top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-6 md:px-12 md:py-8 w-full max-w-7xl mx-auto"
+        id="anim-header" style="opacity: 0; transform: translateY(-20px);">
+        <!-- Logo -->
+        <a href="/" class="flex items-center gap-3 group">
+            <div
+                class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary/50 flex items-center justify-center text-primary-foreground font-bold text-xl shadow-lg group-hover:shadow-primary/50 transition-all duration-300">
+                V
+            </div>
+            <span
+                class="text-xl font-bold tracking-tight text-foreground group-hover:text-primary transition-colors">Visual
+                Similarity</span>
+        </a>
+
+        <!-- Custom Anime Navbar Pill -->
+        <nav class="anime-pill relative" id="anime-nav-container">
+            <!-- Mascot Follower -->
+            <div class="anime-mascot shadow-lg" id="anime-mascot-element">
+                <div class="mascot-eye left"></div>
+                <div class="mascot-eye right"></div>
+                <div class="mascot-blush left"></div>
+                <div class="mascot-blush right"></div>
+                <div class="mascot-mouth"></div>
+                <!-- Triangle Tail -->
+                <div class="absolute -bottom-1 left-1/2 w-3 h-3 bg-white rotate-45 transform -translate-x-1/2"></div>
+            </div>
+
+            <a href="/" class="anime-link active" data-nav-target>
+                <i data-lucide="eye" class="w-4 h-4"></i>
+                <span class="hidden sm:inline">Home</span>
+            </a>
+
+            <a href="/login" class="anime-link" data-nav-target>
+                <i data-lucide="log-in" class="w-4 h-4"></i>
+                <span class="hidden sm:inline">Login</span>
+            </a>
+
+            <a href="/signup" class="anime-link bg-primary/20 text-primary hover:bg-primary/40" data-nav-target>
+                <i data-lucide="zap" class="w-4 h-4"></i>
+                <span class="hidden sm:inline">Get Started</span>
+            </a>
+        </nav>
+    </header>
+
+    <div class="relative z-10 flex flex-col items-center justify-center h-full min-h-screen">
+        <div class="text-center space-y-12 max-w-5xl mx-auto px-6 py-12">
+
+            <div class="space-y-8" id="anim-group-1" style="opacity: 0; transform: translateY(20px);">
+                <div class="relative inline-flex items-center gap-3 px-6 py-3 rounded-full bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20 border border-primary/30 backdrop-blur-xl shadow-2xl hover:scale-105 transition-transform cursor-default"
+                    id="anim-badge" style="opacity: 0; transform: scale(0.9);">
+                    <div
+                        class="absolute inset-0 rounded-full bg-gradient-to-r from-primary/10 via-transparent to-primary/10 animate-pulse">
+                    </div>
+                    <div class="w-2 h-2 bg-primary rounded-full animate-ping"></div>
+                    <span class="relative z-10 text-sm font-bold text-primary tracking-wider uppercase">VISUAL
+                        ENGINE</span>
+                    <div class="w-2 h-2 bg-primary rounded-full animate-ping animation-delay-500"></div>
+                </div>
+
+                <div class="space-y-6">
+                    <h1 class="text-5xl md:text-7xl lg:text-8xl xl:text-9xl font-black tracking-tighter leading-[0.85] select-none"
+                        id="anim-title" style="opacity: 0; transform: translateY(30px);">
+                        <span class="block font-light text-foreground/70 mb-3 text-4xl md:text-6xl lg:text-7xl">
+                            Search
+                        </span>
+                        <span class="block relative">
+                            <span
+                                class="bg-gradient-to-br from-primary via-primary to-primary/60 bg-clip-text text-transparent font-black relative z-10">
+                                the Unseen
+                            </span>
+                            <div
+                                class="absolute inset-0 bg-gradient-to-br from-primary via-primary to-primary/60 bg-clip-text text-transparent font-black blur-2xl opacity-50 scale-105">
+                                the Unseen
+                            </div>
+                            <div id="anim-underline"
+                                class="absolute -bottom-6 left-0 h-3 bg-gradient-to-r from-primary via-primary/80 to-transparent rounded-full shadow-lg shadow-primary/50"
+                                style="width: 0;"></div>
+                        </span>
+                    </h1>
+                </div>
+
+                <div class="max-w-3xl mx-auto space-y-4 pt-4" id="anim-desc" style="opacity: 0;">
+                    <p class="text-xl md:text-2xl text-muted-foreground leading-relaxed font-medium">
+                        Experience real-time visual recognition with our <span
+                            class="text-foreground font-semibold bg-gradient-to-r from-primary/20 to-primary/10 px-2 py-1 rounded-md">advanced
+                            neural search</span>
+                    </p>
+                    <p class="text-lg text-muted-foreground/80 leading-relaxed">
+                        Upload an image to instantly find visually identical and similar items from our deep database.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Adjusted padding-top (pt-8) and margin constraints to push buttons down and fix alignment -->
+            <div class="flex flex-col sm:flex-row gap-6 justify-center items-center pt-8 mt-4" id="anim-buttons"
+                style="opacity: 0; transform: translateY(20px);">
+                <a href="/search"
+                    class="btn-creative group relative inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-primary via-primary to-primary/90 text-primary-foreground rounded-xl font-semibold text-lg shadow-xl overflow-hidden border border-primary/20">
+                    <div
+                        class="absolute inset-0 bg-gradient-to-r from-white/20 via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                    </div>
+                    <!-- Shine Effect -->
+                    <div
+                        class="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full group-hover:translate-x-full duration-[1.5s] ease-in-out transition-transform">
+                    </div>
+                    <span class="relative z-10 tracking-wide">Start Searching</span>
+                    <i data-lucide="scan"
+                        class="relative z-10 w-5 h-5 group-hover:rotate-12 transition-transform duration-300"></i>
+                </a>
+
+                <a href="/search"
+                    class="btn-creative group relative inline-flex items-center gap-3 px-8 py-4 border-2 border-primary/50 rounded-xl font-semibold text-lg backdrop-blur-xl bg-background/60 text-primary hover:bg-primary hover:text-primary-foreground shadow-lg overflow-hidden">
+                    <div
+                        class="absolute inset-0 bg-gradient-to-r from-primary/10 via-transparent to-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                    </div>
+                    <i data-lucide="play"
+                        class="relative z-10 w-5 h-5 group-hover:scale-110 transition-transform duration-300"></i>
+                    <span class="relative z-10 tracking-wide">View Live Demo</span>
+                </a>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+
+            // Setup Exact Three.js Globe Animation matched to React component
+            const container = document.getElementById('canvas-container');
+            const scene = new THREE.Scene();
+
+            // PerspectiveCamera position=[0, 0, 3] fov=75
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 3;
+
+            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+
+            // Ambient light & Point light
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+
+            const pointLight = new THREE.PointLight(0xffffff, 1);
+            pointLight.position.set(10, 10, 10);
+            scene.add(pointLight);
+
+            // React component arguments: radius={1}, 64, 64 segments
+            const globeRadius = 1;
+            const globeGeo = new THREE.SphereGeometry(globeRadius, 64, 64);
+            const globeMat = new THREE.MeshBasicMaterial({
+                color: 0xf8fafc, // hsl(var(--foreground))
+                transparent: true,
+                opacity: 0.15,
+                wireframe: true
+            });
+            const globe = new THREE.Mesh(globeGeo, globeMat);
+
+            const group = new THREE.Group();
+            group.add(globe);
+            scene.add(group);
+
+            const rotationSpeed = 0.004;
+
+            function animate() {
+                requestAnimationFrame(animate);
+
+                // Exact React Frame calculations
+                group.rotation.y += rotationSpeed;
+                group.rotation.x += rotationSpeed * 0.3;
+                group.rotation.z += rotationSpeed * 0.1;
+
+                renderer.render(scene, camera);
+            }
+            animate();
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+
+            // Replicate Framer Motion animations with GSAP
+            const tl = gsap.timeline();
+            tl.to("#anim-header", { opacity: 1, y: 0, duration: 0.8, ease: "power2.out" })
+                .to("#anim-group-1", { opacity: 1, y: 0, duration: 0.8, ease: "power2.out" }, 0.2)
+                .to("#anim-badge", { opacity: 1, scale: 1, duration: 0.6, ease: "back.out(1.7)" }, 0.4)
+                .to("#anim-title", { opacity: 1, y: 0, duration: 1, ease: "power2.out" }, 0.5)
+                .to("#anim-desc", { opacity: 1, duration: 0.8, ease: "power1.inOut" }, 1.0)
+                .to("#anim-buttons", { opacity: 1, y: 0, duration: 0.8, ease: "power2.out" }, 1.2)
+                .to("#anim-underline", { width: "100%", duration: 1.5, ease: "power2.out" }, 1.4);
+
+            // Anime Navbar Mascot Logic
+            const navLinks = document.querySelectorAll('.anime-link[data-nav-target]');
+            const mascot = document.getElementById('anime-mascot-element');
+            const navContainer = document.getElementById('anime-nav-container');
+
+            navLinks.forEach(link => {
+                link.addEventListener('mouseenter', (e) => {
+                    // Calculate position relative to the container
+                    const linkRect = e.target.getBoundingClientRect();
+                    const containerRect = navContainer.getBoundingClientRect();
+
+                    // The center of the hovered link relative to the left of the container
+                    const relativeCenter = (linkRect.left - containerRect.left) + (linkRect.width / 2);
+
+                    mascot.classList.add('visible');
+                    mascot.style.left = `${relativeCenter}px`;
+                    mascot.style.transform = `translateX(-50%) scale(1.1) rotate(${(Math.random() - 0.5) * 10}deg)`;
+                });
+
+                link.addEventListener('mouseleave', () => {
+                    mascot.classList.remove('visible');
+                    mascot.style.transform = `translateX(-50%) scale(0.5) rotate(0deg)`;
+                });
+            });
+        });
+    </script>
+</body>
+
+</html>

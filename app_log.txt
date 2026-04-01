@@ -1,0 +1,31 @@
+2026-03-06 15:44:37.765969: I tensorflow/core/util/port.cc:113] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+WARNING:tensorflow:From D:\vinnu\visual similarity\venv\Lib\site-packages\keras\src\losses.py:2976: The name tf.losses.sparse_softmax_cross_entropy is deprecated. Please use tf.compat.v1.losses.sparse_softmax_cross_entropy instead.
+
+Loading ML Pipeline (YOLOv8, MobileNetV2, FAISS, Grad-CAM)...
+Loading YOLOv8n Engine...
+Traceback (most recent call last):
+  File "D:\vinnu\visual similarity\app.py", line 22, in <module>
+    detector = ObjectDetector()
+               ^^^^^^^^^^^^^^^^
+  File "D:\vinnu\visual similarity\core\object_detector.py", line 7, in __init__
+    self.model = YOLO('yolov8n.pt')
+                 ^^^^^^^^^^^^^^^^^^
+  File "D:\vinnu\visual similarity\venv\Lib\site-packages\ultralytics\engine\model.py", line 94, in __init__
+    self._load(model, task)
+  File "D:\vinnu\visual similarity\venv\Lib\site-packages\ultralytics\engine\model.py", line 146, in _load
+    self.model, self.ckpt = attempt_load_one_weight(weights)
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\vinnu\visual similarity\venv\Lib\site-packages\ultralytics\nn\tasks.py", line 628, in attempt_load_one_weight
+    ckpt, weight = torch_safe_load(weight)  # load ckpt
+                   ^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\vinnu\visual similarity\venv\Lib\site-packages\ultralytics\nn\tasks.py", line 567, in torch_safe_load
+    return torch.load(file, map_location='cpu'), file  # load
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\vinnu\visual similarity\venv\Lib\site-packages\torch\serialization.py", line 1548, in load
+    raise pickle.UnpicklingError(_get_wo_message(str(e))) from None
+_pickle.UnpicklingError: Weights only load failed. This file can still be loaded, to do so you have two options, [1mdo those steps only if you trust the source of the checkpoint[0m. 
+	(1) In PyTorch 2.6, we changed the default value of the `weights_only` argument in `torch.load` from `False` to `True`. Re-running `torch.load` with `weights_only` set to `False` will likely succeed, but it can result in arbitrary code execution. Do it only if you got the file from a trusted source.
+	(2) Alternatively, to load with `weights_only=True` please check the recommended steps in the following error message.
+	WeightsUnpickler error: Unsupported global: GLOBAL ultralytics.nn.tasks.DetectionModel was not an allowed global by default. Please use `torch.serialization.add_safe_globals([ultralytics.nn.tasks.DetectionModel])` or the `torch.serialization.safe_globals([ultralytics.nn.tasks.DetectionModel])` context manager to allowlist this global if you trust this class/function.
+
+Check the documentation of torch.load to learn more about types accepted by default with weights_only https://pytorch.org/docs/stable/generated/torch.load.html.

@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Team | Visual Similarity Framework</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body>
+    <div id="three-bg"></div>
+
+    <div class="app-container">
+        <div class="anime-nav-container">
+            <nav class="anime-nav">
+                <a href="/search" class="anime-nav-link"><i data-lucide="scan"></i><span>Neural Search</span></a>
+                <a href="/about" class="anime-nav-link"><i data-lucide="info"></i><span>About</span></a>
+                <a href="/team" class="anime-nav-link active"><i data-lucide="users"></i><span>Team</span></a>
+                <a href="/logout" class="anime-nav-link"><i data-lucide="log-out"></i><span>Logout</span></a>
+            </nav>
+        </div>
+
+        <header class="app-header">
+            <div class="logo">ASTRA<span>GUARDIAN</span></div>
+            <h1>Meet the Developers</h1>
+            <p>The batch behind the Visual Similarity Framework</p>
+        </header>
+
+        <main class="app-main">
+            <div class="shuffle-wrapper">
+                <div class="shuffle-container">
+                    <!-- Cards will be initialized by ui-animations.js -->
+                    <div class="shuffling-card">
+                        <img src="" alt="Aswinitha Patta" class="card-avatar">
+                        <p class="card-content">Building robust systems that power intelligent solutions.</p>
+                        <p class="card-author">Aswinitha Patta - Team Lead & Backend</p>
+                    </div>
+                    <div class="shuffling-card">
+                        <img src="" alt="Adilsha Khan Pathan" class="card-avatar">
+                        <p class="card-content">Training neural networks to see and understand the world.</p>
+                        <p class="card-author">Adilsha Khan Pathan - Model Training</p>
+                    </div>
+                    <div class="shuffling-card">
+                        <img src="" alt="Vinod Thadi" class="card-avatar">
+                        <p class="card-content">Designing scalable architectures for tomorrow.</p>
+                        <p class="card-author">Vinod Thadi - Product Architect</p>
+                    </div>
+                    <div class="shuffling-card">
+                        <img src="" alt="Ajay Jada" class="card-avatar">
+                        <p class="card-content">Crafting seamless user experiences with modern interfaces.</p>
+                        <p class="card-author">Ajay Jada - Frontend</p>
+                    </div>
+                    <div class="shuffling-card">
+                        <img src="" alt="Venkatesh Sunkara" class="card-avatar">
+                        <p class="card-content">Connecting systems and enabling smooth data flow.</p>
+                        <p class="card-author">Venkatesh Sunkara - API Integration</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/Draggable.min.js"></script>
+    <script src="{{ url_for('static', filename='js/ui-animations.js') }}"></script>
+    <script>
+        // Simple starfield background
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.getElementById('three-bg').appendChild(renderer.domElement);
+
+        const starsGeom = new THREE.BufferGeometry();
+        const posArray = new Float32Array(2000 * 3);
+        for (let i = 0; i < 2000 * 3; i++) posArray[i] = (Math.random() - 0.5) * 50;
+        starsGeom.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        const starsMesh = new THREE.Points(starsGeom, new THREE.PointsMaterial({ size: 0.03, color: 0x3b82f6, transparent: true, opacity: 0.5 }));
+        scene.add(starsMesh);
+        camera.position.z = 15;
+
+        function animate() {
+            requestAnimationFrame(animate);
+            starsMesh.rotation.y += 0.0005;
+            renderer.render(scene, camera);
+        }
+        animate();
+        lucide.createIcons();
+    </script>
+</body>
+
+</html>

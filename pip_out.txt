@@ -1,0 +1,39 @@
+Collecting Flask==3.0.0
+  Using cached flask-3.0.0-py3-none-any.whl (99 kB)
+Collecting Werkzeug==3.0.1
+  Using cached werkzeug-3.0.1-py3-none-any.whl (226 kB)
+Collecting tensorflow==2.15.0
+  Using cached tensorflow-2.15.0-cp311-cp311-win_amd64.whl (2.1 kB)
+Collecting faiss-cpu==1.7.4
+  Using cached faiss_cpu-1.7.4-cp311-cp311-win_amd64.whl (10.8 MB)
+Collecting Pillow==10.0.1
+  Using cached Pillow-10.0.1-cp311-cp311-win_amd64.whl (2.5 MB)
+Collecting numpy==1.26.0
+  Using cached numpy-1.26.0-cp311-cp311-win_amd64.whl (15.8 MB)
+Collecting opencv-python==4.8.1.78
+  Using cached opencv_python-4.8.1.78-cp37-abi3-win_amd64.whl (38.1 MB)
+Collecting ultralytics==8.0.228
+  Using cached ultralytics-8.0.228-py3-none-any.whl (661 kB)
+Collecting matplotlib==3.8.2
+  Using cached matplotlib-3.8.2-cp311-cp311-win_amd64.whl (7.6 MB)
+Collecting seaborn==0.13.0
+  Using cached seaborn-0.13.0-py3-none-any.whl (294 kB)
+Collecting scikit-learn==1.3.2
+  Using cached scikit_learn-1.3.2-cp311-cp311-win_amd64.whl (9.2 MB)
+Collecting Jinja2>=3.1.2
+  Using cached jinja2-3.1.6-py3-none-any.whl (134 kB)
+Collecting itsdangerous>=2.1.2
+  Using cached itsdangerous-2.2.0-py3-none-any.whl (16 kB)
+Collecting click>=8.1.3
+  Using cached click-8.3.1-py3-none-any.whl (108 kB)
+Collecting blinker>=1.6.2
+  Using cached blinker-1.9.0-py3-none-any.whl (8.5 kB)
+Collecting MarkupSafe>=2.1.1
+  Using cached markupsafe-3.0.3-cp311-cp311-win_amd64.whl (15 kB)
+Collecting tensorflow-intel==2.15.0
+  Using cached tensorflow_intel-2.15.0-cp311-cp311-win_amd64.whl (300.9 MB)
+ERROR: Could not install packages due to an OSError: [Errno 28] No space left on device
+
+
+[notice] A new release of pip available: 22.3 -> 26.0.1
+[notice] To update, run: D:\vinnu\visual similarity\venv\Scripts\python.exe -m pip install --upgrade pip

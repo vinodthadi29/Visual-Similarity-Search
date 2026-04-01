@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up | AstraGuardian</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body class="auth-body">
+    <div id="three-bg"></div>
+
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="robot-window" id="guardian-signup"></div>
+
+            <div class="auth-form-side">
+                <div class="auth-header">
+                    <h2>Join the Network</h2>
+                    <p>Create your unique neural identifier.</p>
+                </div>
+
+                <form id="signup-form">
+                    <div class="input-group">
+                        <label>Pick Username</label>
+                        <input type="text" id="username" placeholder="Choose neural ID" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Create Access Key</label>
+                        <input type="password" id="password" placeholder="••••••••" required>
+                    </div>
+
+                    <div id="auth-msg" class="auth-msg hidden"></div>
+
+                    <button type="submit" class="btn-main full-width">Join Discovery</button>
+
+                    <p class="auth-footer">Already identified? <a href="/login">Access ID</a></p>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="{{ url_for('static', filename='js/guardian.js') }}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const guardian = new AstraGuardian('guardian-signup');
+            const msgEl = document.getElementById('auth-msg');
+            const usernameInput = document.getElementById('username');
+            const passwordInput = document.getElementById('password');
+
+            // --- Robot Interactions ---
+            let keystrokeCount = 0;
+
+            usernameInput.addEventListener('focus', () => guardian.setState('watching'));
+            passwordInput.addEventListener('focus', () => guardian.setState('alert'));
+
+            [usernameInput, passwordInput].forEach(input => {
+                input.addEventListener('blur', () => guardian.setState('idle'));
+                input.addEventListener('input', () => {
+                    keystrokeCount++;
+                    guardian.setKeystrokePulse(keystrokeCount);
+                    guardian.setTypingActivity(1.0);
+                    setTimeout(() => guardian.setTypingActivity(0), 1000);
+                });
+            });
+
+            document.getElementById('signup-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                msgEl.classList.add('hidden');
+                guardian.setState('scanning');
+
+                const response = await fetch('/api/signup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: usernameInput.value,
+                        password: passwordInput.value
+                    })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    guardian.setState('approved');
+                    msgEl.textContent = data.message;
+                    msgEl.className = 'auth-msg success';
+                    msgEl.classList.remove('hidden');
+                    setTimeout(() => window.location.href = '/login', 2500);
+                } else {
+                    guardian.setState('idle');
+                    msgEl.textContent = data.message;
+                    msgEl.className = 'auth-msg error';
+                    msgEl.classList.remove('hidden');
+                }
+                gsap.from(msgEl, { y: -10, opacity: 0, duration: 0.3 });
+            });
+        });
+    </script>
+</body>
+
+</html>
