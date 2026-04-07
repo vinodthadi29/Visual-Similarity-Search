@@ -1,0 +1,246 @@
+You are a senior AI/ML engineer, full-stack architect, and product designer.
+Upgrade my existing project AstraVision — Visual Similarity Intelligence Platform into a production-grade, industry-level AI system.
+
+This is NOT a demo. Build it like a real startup product similar to Google Lens + OpenAI + Adobe AI tools.
+
+🎯 CURRENT SYSTEM (IMPORTANT CONTEXT)
+
+My system already has:
+
+Flask backend
+React frontend
+MobileNetV2 feature extraction
+pgvector similarity search
+YOLO object detection
+Grad-CAM heatmap
+JWT authentication
+Image upload + similarity retrieval
+❗ GOAL
+
+Transform this into a:
+
+👉 Real-time Explainable Visual Intelligence Platform
+👉 Scalable AI SaaS product
+👉 Interactive AI system (not static results)
+
+🧠 CORE UPGRADE REQUIREMENTS
+1. 🔥 Real-Time AI Processing Pipeline
+
+Enhance backend to support:
+
+Async processing (Celery / background workers)
+Progress tracking (WebSockets / SSE)
+Live status updates:
+Uploading → Detecting → Extracting → Searching → Explaining
+
+Frontend must show real-time progress UI.
+
+2. 🧠 Advanced Feature Extraction (Upgrade Model)
+
+Replace or extend MobileNetV2 with:
+
+CLIP (OpenAI / OpenCLIP) → semantic understanding
+EfficientNet / ViT hybrid
+Multi-modal embeddings (image + text support)
+
+Support:
+
+better similarity
+semantic search
+3. ⚡ Hybrid Similarity Engine
+
+Implement:
+
+Cosine similarity (existing)
+FAISS / pgvector optimization
+Hybrid scoring:
+visual similarity
+object similarity (YOLO labels)
+color histogram similarity
+
+Final score = weighted combination
+
+4. 🎯 Multi-Object Smart Search
+
+Allow:
+
+selecting bounding boxes
+searching only selected object
+
+Flow:
+
+User selects region → crop → embed → search
+
+5. 🔥 Explainable AI Engine (NEXT LEVEL)
+
+Enhance Grad-CAM:
+
+Overlay heatmaps on both query and results
+Show similarity reasons:
+Color: 82%
+Shape: 91%
+Texture: 76%
+
+Add API:
+
+/api/explain
+
+Return:
+
+heatmap
+explanation text
+6. 🤖 AI Explanation (LLM Integration)
+
+Integrate:
+
+lightweight LLM (local or API)
+
+Generate explanations like:
+
+"These images are similar due to shared structural patterns, edge features, and dominant color distribution."
+
+7. 🌌 3D Embedding Visualization (Three.js)
+
+Build a 3D vector space UI:
+
+embeddings shown as points
+query image = glowing node
+similar images cluster nearby
+
+Features:
+
+zoom, rotate
+hover → show image preview
+click → open comparison
+8. ⚡ Live Interaction System
+
+Frontend must feel alive:
+
+AI scanning animation
+progressive result loading
+shimmer loading
+transitions between states
+9. 🧩 Comparison Mode
+
+When user clicks result:
+
+Show:
+
+side-by-side comparison
+heatmap overlay
+slider comparison
+10. 📊 Confidence & Analytics
+
+Add:
+
+similarity score (%)
+ranking explanation
+processing time
+11. 🧠 Feedback Learning System
+
+Allow:
+
+👍 relevant / 👎 not relevant
+
+Store feedback → improve ranking logic
+
+12. 🔐 Production Authentication
+
+Upgrade:
+
+Google OAuth login
+user sessions
+search history
+saved searches
+13. 📦 API Platform Mode
+
+Expose API:
+
+POST /api/search
+POST /api/detect
+POST /api/explain
+
+Make system usable as developer platform
+
+14. 🚀 Performance Optimization
+
+Implement:
+
+caching (Redis)
+lazy model loading
+batch processing
+image compression
+15. 🧠 Smart Dataset Indexing
+auto embedding generation
+incremental indexing
+re-index on update
+🎨 FRONTEND REQUIREMENTS (VERY IMPORTANT)
+
+Keep existing UI but upgrade:
+
+cinematic transitions
+real-time feedback
+3D interactions (Three.js)
+glassmorphism + futuristic UI
+animated states
+
+Add sections:
+
+Visual Search
+AI Explain Mode
+3D Space View
+History Dashboard
+🏗️ ARCHITECTURE REQUIREMENTS
+
+Backend:
+
+Flask (keep)
+Modular architecture
+Services:
+embedding service
+search service
+explainability service
+
+Add:
+
+Celery workers
+Redis queue
+
+Database:
+
+PostgreSQL + pgvector
+📁 CODE REQUIREMENTS
+Clean folder structure
+production-ready code
+proper error handling
+logging
+environment config
+🧪 TESTING
+
+Add:
+
+API tests
+pipeline tests
+performance benchmarks
+⚠️ IMPORTANT RULES
+DO NOT break existing frontend UI
+DO NOT create mock/demo code
+ALL features must be real and functional
+Code must be scalable and production-ready
+🎯 FINAL OUTPUT EXPECTATION
+
+The final system should feel like:
+
+Google Lens
+OpenAI research tool
+AI SaaS product
+
+NOT a college project.
+
+🚀 BONUS (if possible)
+
+Add:
+
+voice input ("search similar to this")
+drag-drop UX
+mobile responsiveness

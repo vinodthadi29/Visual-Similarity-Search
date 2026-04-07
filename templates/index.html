@@ -1,65 +1,117 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neural Search | Visual Similarity</title>
+    <title>AstraVision | Visual Intelligence</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/astravision.css') }}">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
 </head>
-
 <body>
     <div id="three-bg"></div>
 
     <div class="app-container">
+
+        <!-- Navigation -->
         <div class="anime-nav-container">
             <nav class="anime-nav">
-                <a href="/search" class="anime-nav-link active"><i data-lucide="scan"></i><span>Neural Search</span></a>
-                <a href="/about" class="anime-nav-link"><i data-lucide="info"></i><span>About</span></a>
-                <a href="/team" class="anime-nav-link"><i data-lucide="users"></i><span>Team</span></a>
-                <a href="/logout" class="anime-nav-link"><i data-lucide="log-out"></i><span>Logout</span></a>
+                <a href="/search" class="anime-nav-link active" id="nav-search">
+                    <i data-lucide="scan"></i><span>Neural Search</span>
+                </a>
+                <a href="/about" class="anime-nav-link">
+                    <i data-lucide="info"></i><span>About</span>
+                </a>
+                <a href="/team" class="anime-nav-link">
+                    <i data-lucide="users"></i><span>Team</span>
+                </a>
+                <a href="/logout" class="anime-nav-link">
+                    <i data-lucide="log-out"></i><span>Logout</span>
+                </a>
             </nav>
         </div>
 
+        <!-- Header -->
         <header class="app-header">
-            <div class="logo">VISUAL<span>SIMILARITY</span></div>
-            <h1>Visual Intelligence</h1>
-            <p>Powered by MobileNetV2, YOLOv8, and FAISS</p>
+            <div class="logo">ASTRA<span>VISION</span></div>
+            <h1>Visual Intelligence Platform</h1>
+            <p>YOLOv8 · MobileNetV2 · FAISS · Grad-CAM · Hybrid Similarity</p>
+
+            <!-- View Tabs -->
+            <div class="view-tabs">
+                <button class="view-tab active" data-view="search">
+                    <i data-lucide="scan-search"></i> Search
+                </button>
+                <button class="view-tab" data-view="space3d">
+                    <i data-lucide="globe"></i> 3D Space
+                </button>
+                <button class="view-tab" data-view="history">
+                    <i data-lucide="clock"></i> History
+                </button>
+            </div>
         </header>
 
-        <main class="app-main">
-            <section class="card upload-card" id="drop-area"
-                style="display:flex; justify-content:center; align-items:center;">
+        <!-- === SEARCH VIEW === -->
+        <div id="view-search" class="view active">
+
+            <!-- Upload Zone -->
+            <section class="card upload-card" id="drop-area">
                 <label for="fileElem" class="custum-file-upload">
                     <div class="icon">
-                        <svg viewBox="0 0 24 24" fill="" xmlns="http://www.w3.org/2000/svg">
-                            <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-                            <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-                            <g id="SVGRepo_iconCarrier">
-                                <path fill-rule="evenodd" clip-rule="evenodd"
-                                    d="M10 1C9.73478 1 9.48043 1.10536 9.29289 1.29289L3.29289 7.29289C3.10536 7.48043 3 7.73478 3 8V20C3 21.6569 4.34315 23 6 23H7C7.55228 23 8 22.5523 8 22C8 21.4477 7.55228 21 7 21H6C5.44772 21 5 20.5523 5 20V9H10C10.5523 9 11 8.55228 11 8V3H18C18.5523 3 19 3.44772 19 4V9C19 9.55228 19.4477 10 20 10C20.5523 10 21 9.55228 21 9V4C21 2.34315 19.6569 1 18 1H10ZM9 7H6.41421L9 4.41421V7ZM14 15.5C14 14.1193 15.1193 13 16.5 13C17.8807 13 19 14.1193 19 15.5V16V17H20C21.1046 17 22 17.8954 22 19C22 20.1046 21.1046 21 20 21H13C11.8954 21 11 20.1046 11 19C11 17.8954 11.8954 17 13 17H14V16V15.5ZM16.5 11C14.142 11 12.2076 12.8136 12.0156 15.122C10.2825 15.5606 9 17.1305 9 19C9 21.2091 10.7909 23 13 23H20C22.2091 23 24 21.2091 24 19C24 17.1305 22.7175 15.5606 20.9844 15.122C20.7924 12.8136 18.858 11 16.5 11Z"
-                                    fill=""></path>
-                            </g>
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path fill-rule="evenodd" clip-rule="evenodd"
+                                d="M10 1C9.73478 1 9.48043 1.10536 9.29289 1.29289L3.29289 7.29289C3.10536 7.48043 3 7.73478 3 8V20C3 21.6569 4.34315 23 6 23H7C7.55228 23 8 22.5523 8 22C8 21.4477 7.55228 21 7 21H6C5.44772 21 5 20.5523 5 20V9H10C10.5523 9 11 8.55228 11 8V3H18C18.5523 3 19 3.44772 19 4V9C19 9.55228 19.4477 10 20 10C20.5523 10 21 9.55228 21 9V4C21 2.34315 19.6569 1 18 1H10ZM9 7H6.41421L9 4.41421V7ZM14 15.5C14 14.1193 15.1193 13 16.5 13C17.8807 13 19 14.1193 19 15.5V16V17H20C21.1046 17 22 17.8954 22 19C22 20.1046 21.1046 21 20 21H13C11.8954 21 11 20.1046 11 19C11 17.8954 11.8954 17 13 17H14V16V15.5ZM16.5 11C14.142 11 12.2076 12.8136 12.0156 15.122C10.2825 15.5606 9 17.1305 9 19C9 21.2091 10.7909 23 13 23H20C22.2091 23 24 21.2091 24 19C24 17.1305 22.7175 15.5606 20.9844 15.122C20.7924 12.8136 18.858 11 16.5 11Z" fill=""></path>
                         </svg>
                     </div>
-                    <div class="text">
-                        <span>Click to upload image</span>
-                    </div>
+                    <div class="text"><span>Drop image here or click to upload</span></div>
                     <input type="file" id="fileElem" accept="image/*" style="display:none">
                 </label>
             </section>
 
+            <!-- Pipeline Progress -->
+            <section class="pipeline-section hidden" id="pipeline-section">
+                <div class="pipeline-stages">
+                    <div class="stage" id="stage-uploaded">
+                        <div class="stage-dot"></div>
+                        <span>Upload</span>
+                    </div>
+                    <div class="stage-line"></div>
+                    <div class="stage" id="stage-detecting">
+                        <div class="stage-dot"></div>
+                        <span>Detect</span>
+                    </div>
+                    <div class="stage-line"></div>
+                    <div class="stage" id="stage-extracting">
+                        <div class="stage-dot"></div>
+                        <span>Extract</span>
+                    </div>
+                    <div class="stage-line"></div>
+                    <div class="stage" id="stage-searching">
+                        <div class="stage-dot"></div>
+                        <span>Search</span>
+                    </div>
+                    <div class="stage-line"></div>
+                    <div class="stage" id="stage-analyzing">
+                        <div class="stage-dot"></div>
+                        <span>Analyze</span>
+                    </div>
+                </div>
+                <div class="pipeline-bar-wrap">
+                    <div class="pipeline-bar" id="pipeline-bar"></div>
+                </div>
+                <p class="pipeline-msg" id="pipeline-msg">Initializing...</p>
+            </section>
+
+            <!-- Image Preview + Bounding Boxes -->
             <section class="card analysis-card hidden" id="preview-container">
                 <div class="section-header">
                     <div class="header-titles">
                         <h3>Query Analysis</h3>
                         <p id="roi-instruction">Scanning image for objects...</p>
                     </div>
-
                     <div class="feature-tabs hidden" id="yolo-controls">
                         <div class="tabs-bg">
                             <button class="feature-tab active" data-mode="global" id="tab-global">Global Search</button>
@@ -68,50 +120,118 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="image-wrapper" id="image-wrapper">
                     <img id="query-preview" src="" alt="Query Preview">
                     <div id="bounding-boxes-container"></div>
                 </div>
-
-                <div id="loader" class="loader-container hidden">
-                    <div class="spinner"></div>
-                    <span>Processing neural pipeline...</span>
-                </div>
             </section>
 
+            <!-- Results -->
             <section class="results-container hidden" id="results-section">
                 <div class="section-header">
                     <div class="header-titles">
                         <h3>Visual Matches</h3>
-                        <p>Top nearest neighbors retrieved from FAISS</p>
+                        <p id="results-subtitle">Top similarity matches from FAISS index</p>
                     </div>
-
-                    <div class="toggle-container" id="xai-controls">
-                        <span class="toggle-label">Explainable AI (Grad-CAM)</span>
-                        <label class="premium-switch">
-                            <input type="checkbox" id="xai-toggle">
-                            <span class="switch-slider"></span>
-                        </label>
+                    <div class="results-controls">
+                        <div class="toggle-container" id="xai-controls">
+                            <span class="toggle-label">Grad-CAM</span>
+                            <label class="premium-switch">
+                                <input type="checkbox" id="xai-toggle">
+                                <span class="switch-slider"></span>
+                            </label>
+                        </div>
                     </div>
                 </div>
 
+                <!-- Stats bar -->
+                <div class="stats-bar" id="stats-bar"></div>
+
                 <div id="results-grid" class="results-grid"></div>
             </section>
-        </main>
+        </div>
+
+        <!-- === 3D SPACE VIEW === -->
+        <div id="view-space3d" class="view hidden">
+            <div class="space3d-header">
+                <h2>Embedding Space Visualization</h2>
+                <p>Each node represents an image in 1280-dimensional feature space, reduced to 3D via PCA.</p>
+                <p class="space3d-hint">Run a search first to populate the space. Hover nodes to preview images.</p>
+            </div>
+            <div class="space3d-container" id="space3d-container">
+                <div class="space3d-empty" id="space3d-empty">
+                    <i data-lucide="globe"></i>
+                    <p>No embeddings yet. Run a visual search to populate the 3D space.</p>
+                </div>
+                <canvas id="space3d-canvas"></canvas>
+            </div>
+            <div class="space3d-legend">
+                <div class="legend-item"><span class="legend-dot query"></span> Query Image</div>
+                <div class="legend-item"><span class="legend-dot high"></span> High Similarity</div>
+                <div class="legend-item"><span class="legend-dot low"></span> Low Similarity</div>
+            </div>
+        </div>
+
+        <!-- === HISTORY VIEW === -->
+        <div id="view-history" class="view hidden">
+            <div class="history-header">
+                <h2>Search History</h2>
+                <p>Your recent visual searches</p>
+            </div>
+            <div id="history-grid" class="history-grid">
+                <div class="history-loading">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+        </div>
+
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/Draggable.min.js"></script>
+    <!-- Comparison Modal -->
+    <div class="modal-overlay hidden" id="compare-modal">
+        <div class="modal-panel">
+            <div class="modal-header">
+                <h3>Visual Comparison</h3>
+                <button class="modal-close" id="modal-close">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div class="compare-wrapper" id="compare-wrapper">
+                <div class="compare-before">
+                    <img id="compare-query-img" src="" alt="Query">
+                    <span class="compare-label">Query</span>
+                </div>
+                <div class="compare-after" id="compare-after">
+                    <img id="compare-result-img" src="" alt="Match">
+                    <span class="compare-label">Match</span>
+                </div>
+                <div class="compare-divider" id="compare-divider"></div>
+                <input type="range" class="compare-slider" id="compare-slider" min="0" max="100" value="50">
+            </div>
+            <div class="similarity-breakdown" id="similarity-breakdown">
+                <h4>Similarity Breakdown</h4>
+                <div class="breakdown-bars" id="breakdown-bars"></div>
+                <p class="breakdown-explanation" id="breakdown-explanation"></p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-feedback up" data-rating="1" id="btn-feedback-up">
+                    <i data-lucide="thumbs-up"></i> Relevant
+                </button>
+                <button class="btn-feedback down" data-rating="-1" id="btn-feedback-down">
+                    <i data-lucide="thumbs-down"></i> Not Relevant
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
     <script src="{{ url_for('static', filename='js/ui-animations.js') }}"></script>
     <script>
-        // Simple starfield background for the internal pages
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.getElementById('three-bg').appendChild(renderer.domElement);
-
         const starsGeom = new THREE.BufferGeometry();
         const posArray = new Float32Array(2000 * 3);
         for (let i = 0; i < 2000 * 3; i++) posArray[i] = (Math.random() - 0.5) * 50;
@@ -119,15 +239,18 @@
         const starsMesh = new THREE.Points(starsGeom, new THREE.PointsMaterial({ size: 0.03, color: 0x3b82f6, transparent: true, opacity: 0.5 }));
         scene.add(starsMesh);
         camera.position.z = 15;
-
-        function animate() {
-            requestAnimationFrame(animate);
+        function animateBg() {
+            requestAnimationFrame(animateBg);
             starsMesh.rotation.y += 0.0005;
             renderer.render(scene, camera);
         }
-        animate();
+        animateBg();
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
         lucide.createIcons();
     </script>
 </body>
-
 </html>

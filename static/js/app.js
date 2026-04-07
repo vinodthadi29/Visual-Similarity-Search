@@ -1,142 +1,236 @@
+/* === AstraVision — Visual Intelligence Platform === */
+
 document.addEventListener('DOMContentLoaded', () => {
+
+    /* ── DOM Refs ──────────────────────────────────────── */
     const dropArea = document.getElementById('drop-area');
     const fileInput = document.getElementById('fileElem');
     const previewContainer = document.getElementById('preview-container');
     const queryPreview = document.getElementById('query-preview');
     const bboxesContainer = document.getElementById('bounding-boxes-container');
-    const loader = document.getElementById('loader');
     const resultsSection = document.getElementById('results-section');
     const resultsGrid = document.getElementById('results-grid');
-
     const xaiToggle = document.getElementById('xai-toggle');
     const yoloControls = document.getElementById('yolo-controls');
-
-    // Feature Tabs UI
     const tabGlobal = document.getElementById('tab-global');
     const tabYolo = document.getElementById('tab-yolo');
     const tabIndicator = document.getElementById('tab-indicator');
     const roiInstruction = document.getElementById('roi-instruction');
+    const pipelineSection = document.getElementById('pipeline-section');
+    const pipelineBar = document.getElementById('pipeline-bar');
+    const pipelineMsg = document.getElementById('pipeline-msg');
+    const statsBar = document.getElementById('stats-bar');
+    const resultsSubtitle = document.getElementById('results-subtitle');
 
+    /* ── State ─────────────────────────────────────────── */
     let currentFilepath = null;
+    let currentQuerySrc = null;
+    let lastResults = [];
+    let lastDetections = [];
+    let activeCompareResult = null;
+    let space3dInitialized = false;
+    let feedbackState = {};
 
-    // 1. Drag & Drop
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-        dropArea.addEventListener(eventName, e => { e.preventDefault(); e.stopPropagation(); }, false);
+    const stageOrder = ['uploaded', 'detecting', 'detected', 'extracting', 'searching', 'analyzing', 'complete'];
+    const stageMap = {
+        uploaded: 'uploaded',
+        detecting: 'detecting',
+        detected: 'detecting',
+        extracting: 'extracting',
+        searching: 'searching',
+        analyzing: 'analyzing',
+        complete: 'analyzing'
+    };
+
+    /* ── View Switching ────────────────────────────────── */
+    document.querySelectorAll('.view-tab').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const view = btn.dataset.view;
+            document.querySelectorAll('.view-tab').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById(`view-${view}`).classList.add('active');
+
+            if (view === 'history') loadHistory();
+            if (view === 'space3d') initSpace3D();
+            lucide.createIcons();
+        });
     });
 
-    ['dragenter', 'dragover'].forEach(eventName => {
-        dropArea.addEventListener(eventName, () => dropArea.classList.add('highlight'), false);
+    /* ── Drag & Drop ───────────────────────────────────── */
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(ev =>
+        dropArea.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); })
+    );
+    ['dragenter', 'dragover'].forEach(ev =>
+        dropArea.addEventListener(ev, () => dropArea.classList.add('highlight'))
+    );
+    ['dragleave', 'drop'].forEach(ev =>
+        dropArea.addEventListener(ev, () => dropArea.classList.remove('highlight'))
+    );
+    dropArea.addEventListener('drop', e => handleFiles(e.dataTransfer.files));
+    dropArea.addEventListener('click', e => {
+        if (!e.target.closest('.custum-file-upload') && e.target !== fileInput) fileInput.click();
     });
-
-    ['dragleave', 'drop'].forEach(eventName => {
-        dropArea.addEventListener(eventName, () => dropArea.classList.remove('highlight'), false);
-    });
-
-    dropArea.addEventListener('drop', (e) => handleFiles(e.dataTransfer.files), false);
-    dropArea.addEventListener('click', (e) => {
-        // Prevent double trigger if clicked directly on the label, which natively triggers the input
-        if (!e.target.closest('.custum-file-upload') && e.target !== fileInput) {
-            fileInput.click();
-        }
-    });
-    fileInput.addEventListener('change', function () { handleFiles(this.files) });
+    fileInput.addEventListener('change', function () { handleFiles(this.files); });
 
     function handleFiles(files) {
         if (files.length > 0) {
             previewFile(files[0]);
-            detectObjects(files[0]);
+            runPipeline(files[0]);
         }
     }
 
-
-
-    // 2. Premium Preview Animation
+    /* ── Image Preview ─────────────────────────────────── */
     function previewFile(file) {
         const reader = new FileReader();
         reader.readAsDataURL(file);
-        reader.onloadend = function () {
+        reader.onloadend = () => {
+            currentQuerySrc = reader.result;
             queryPreview.src = reader.result;
             previewContainer.classList.remove('hidden');
             resultsSection.classList.add('hidden');
             bboxesContainer.innerHTML = '';
             roiInstruction.innerHTML = 'Scanning image for objects...';
-
             yoloControls.classList.add('hidden');
             document.body.classList.remove('yolo-active');
-
-
-
-            // Subtle fade up animation
-            gsap.fromTo(previewContainer, { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "power2.out" });
-        }
+            gsap.fromTo(previewContainer, { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: 'power2.out' });
+        };
     }
 
-    // 3. Detection
-    async function detectObjects(file) {
-        loader.classList.remove('hidden');
+    /* ── Pipeline Progress UI ──────────────────────────── */
+    function showPipeline() {
+        pipelineSection.classList.remove('hidden');
+        setPipelineProgress(0, 'Initializing pipeline...');
+        ['uploaded', 'detecting', 'extracting', 'searching', 'analyzing'].forEach(s => {
+            const el = document.getElementById(`stage-${s}`);
+            if (el) {
+                el.classList.remove('active', 'done');
+                const line = el.nextElementSibling;
+                if (line && line.classList.contains('stage-line')) line.classList.remove('done');
+            }
+        });
+    }
 
+    function hidePipeline() {
+        setTimeout(() => {
+            gsap.to(pipelineSection, { opacity: 0, y: -10, duration: 0.4, onComplete: () => {
+                pipelineSection.classList.add('hidden');
+                gsap.set(pipelineSection, { opacity: 1, y: 0 });
+            }});
+        }, 800);
+    }
+
+    function setPipelineProgress(pct, msg) {
+        pipelineBar.style.width = pct + '%';
+        pipelineMsg.textContent = msg;
+    }
+
+    function activateStage(stageName) {
+        const stageId = stageMap[stageName] || stageName;
+        const stages = ['uploaded', 'detecting', 'extracting', 'searching', 'analyzing'];
+        const idx = stages.indexOf(stageId);
+
+        stages.forEach((s, i) => {
+            const el = document.getElementById(`stage-${s}`);
+            if (!el) return;
+            const line = el.nextElementSibling;
+            if (i < idx) {
+                el.classList.remove('active');
+                el.classList.add('done');
+                if (line && line.classList.contains('stage-line')) line.classList.add('done');
+            } else if (i === idx) {
+                el.classList.add('active');
+                el.classList.remove('done');
+            } else {
+                el.classList.remove('active', 'done');
+            }
+        });
+    }
+
+    /* ── SSE Streaming Pipeline ────────────────────────── */
+    async function runPipeline(file) {
+        showPipeline();
 
         const formData = new FormData();
         formData.append('query_image', file);
+        formData.append('xai_enabled', xaiToggle.checked ? 'true' : 'false');
 
+        let response;
         try {
-            const detectResponse = await fetch('/api/detect', { method: 'POST', body: formData });
-            const detectData = await detectResponse.json();
+            response = await fetch('/api/stream-search', { method: 'POST', body: formData });
+        } catch (err) {
+            setPipelineProgress(0, 'Network error. Please try again.');
+            return;
+        }
 
-            if (detectData.success) {
-                currentFilepath = detectData.filepath;
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
 
-                // RESTORE ORIGINAL LOGIC: Auto-search the full image immediately
-                performSearch(currentFilepath, null);
+        while (true) {
+            let result;
+            try { result = await reader.read(); } catch (e) { break; }
+            if (result.done) break;
 
-                // Ensure image is loaded before drawing boxes
-                if (queryPreview.complete) {
-                    drawBoundingBoxes(detectData.boxes);
-                } else {
-                    queryPreview.onload = () => drawBoundingBoxes(detectData.boxes);
-                }
+            buffer += decoder.decode(result.value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop();
 
-                if (detectData.boxes.length > 0) {
-                    yoloControls.classList.remove('hidden');
-
-                    // Always default to Global Search tab active on first scan
-                    tabGlobal.classList.add('active');
-                    tabYolo.classList.remove('active');
-                    tabIndicator.style.transform = 'translateX(0%)';
-
-                    roiInstruction.innerHTML = 'Scan complete. Switch to Deep Object Scan to search by region.';
-                } else {
-                    roiInstruction.innerHTML = 'Global neural search complete.';
-                }
-            } else {
-                loader.classList.add('hidden');
-                console.error("Detection Failed:", detectData.error);
+            for (const line of lines) {
+                if (!line.startsWith('data: ')) continue;
+                try {
+                    const data = JSON.parse(line.slice(6));
+                    handleEvent(data);
+                } catch (e) {}
             }
-        } catch (error) {
-            console.error("Neural Scan Error:", error);
-            loader.classList.add('hidden');
-
         }
     }
 
-    // 4. Draw Boxes
+    function handleEvent(data) {
+        activateStage(data.stage);
+        setPipelineProgress(data.progress || 0, data.message || '');
+
+        if (data.stage === 'detected' || data.stage === 'uploaded') {
+            if (data.filepath) currentFilepath = data.filepath;
+            if (data.boxes) {
+                lastDetections = data.boxes;
+                if (queryPreview.complete) drawBoundingBoxes(data.boxes);
+                else queryPreview.onload = () => drawBoundingBoxes(data.boxes);
+                if (data.boxes.length > 0) {
+                    yoloControls.classList.remove('hidden');
+                    tabGlobal.classList.add('active');
+                    tabYolo.classList.remove('active');
+                    if (tabIndicator) tabIndicator.style.transform = 'translateX(0%)';
+                    roiInstruction.innerHTML = `Scan complete. Found <strong>${data.boxes.length}</strong> objects. Switch to Deep Object Scan to search by region.`;
+                } else {
+                    roiInstruction.innerHTML = 'Global neural scan complete.';
+                }
+            }
+        }
+
+        if (data.stage === 'complete') {
+            lastResults = data.results || [];
+            displayResults(data.results, data);
+            hidePipeline();
+        }
+
+        if (data.stage === 'error') {
+            setPipelineProgress(0, `Error: ${data.message}`);
+        }
+    }
+
+    /* ── Bounding Boxes ────────────────────────────────── */
     function drawBoundingBoxes(boxes) {
         bboxesContainer.innerHTML = '';
         if (!boxes || boxes.length === 0) return;
 
-        // MATCH CONTAINER TO IMAGE EXACTLY
         const rect = queryPreview.getBoundingClientRect();
         const wrapperRect = queryPreview.parentElement.getBoundingClientRect();
-
-        // Offset relative to the relative wrapper
-        const offsetLeft = rect.left - wrapperRect.left;
-        const offsetTop = rect.top - wrapperRect.top;
-
         bboxesContainer.style.width = `${rect.width}px`;
         bboxesContainer.style.height = `${rect.height}px`;
-        bboxesContainer.style.left = `${offsetLeft}px`;
-        bboxesContainer.style.top = `${offsetTop}px`;
-        bboxesContainer.style.transform = 'none'; // Remove any default centering
+        bboxesContainer.style.left = `${rect.left - wrapperRect.left}px`;
+        bboxesContainer.style.top = `${rect.top - wrapperRect.top}px`;
+        bboxesContainer.style.transform = 'none';
 
         const scaleX = rect.width / queryPreview.naturalWidth;
         const scaleY = rect.height / queryPreview.naturalHeight;
@@ -144,137 +238,537 @@ document.addEventListener('DOMContentLoaded', () => {
         boxes.forEach((box, index) => {
             const div = document.createElement('div');
             div.className = 'bounding-box';
-
             div.style.left = `${box.x1 * scaleX}px`;
             div.style.top = `${box.y1 * scaleY}px`;
             div.style.width = `${(box.x2 - box.x1) * scaleX}px`;
             div.style.height = `${(box.y2 - box.y1) * scaleY}px`;
-
             div.innerHTML = `<span class="box-label">${box.label} ${(box.confidence * 100).toFixed(0)}%</span>`;
+            gsap.fromTo(div, { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.3, delay: index * 0.08 });
 
-            // Clean fade in for boxes
-            gsap.fromTo(div, { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.3, delay: index * 0.1 });
-
-            div.addEventListener('click', (e) => {
+            div.addEventListener('click', e => {
                 e.stopPropagation();
                 document.querySelectorAll('.bounding-box').forEach(b => b.classList.remove('selected'));
                 div.classList.add('selected');
-                performSearch(currentFilepath, box);
+                reRunWithCrop(box);
             });
 
             bboxesContainer.appendChild(div);
         });
     }
 
-    // Feature Tabs Event Listeners
+    async function reRunWithCrop(box) {
+        if (!currentFilepath || !fileInput.files[0]) return;
+        showPipeline();
+        setPipelineProgress(20, 'Cropping region...');
+
+        const formData = new FormData();
+        formData.append('query_image', fileInput.files[0]);
+        formData.append('crop_data', JSON.stringify(box));
+        formData.append('xai_enabled', xaiToggle.checked ? 'true' : 'false');
+
+        try {
+            const response = await fetch('/api/stream-search', { method: 'POST', body: formData });
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop();
+                for (const line of lines) {
+                    if (!line.startsWith('data: ')) continue;
+                    try { handleEvent(JSON.parse(line.slice(6))); } catch (e) {}
+                }
+            }
+        } catch (e) {
+            setPipelineProgress(0, 'Error during region search.');
+        }
+    }
+
+    /* ── Display Results ───────────────────────────────── */
+    function displayResults(matches, meta) {
+        if (!matches || matches.length === 0) {
+            resultsSection.classList.remove('hidden');
+            resultsGrid.innerHTML = '<div style="text-align:center;padding:3rem;color:rgba(255,255,255,0.3)">No matches found. Make sure the dataset is indexed.</div>';
+            return;
+        }
+
+        resultsSection.classList.remove('hidden');
+        resultsGrid.innerHTML = '';
+
+        if (meta) {
+            statsBar.innerHTML = `
+                <div class="stat-item">
+                    <span class="stat-label">Matches</span>
+                    <span class="stat-value accent">${matches.length}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Processing Time</span>
+                    <span class="stat-value">${meta.processing_time || '—'}s</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Top Score</span>
+                    <span class="stat-value success">${matches.length > 0 ? (matches[0].similarity_score * 100).toFixed(1) + '%' : '—'}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Model</span>
+                    <span class="stat-value">MobileNetV2 + FAISS</span>
+                </div>
+            `;
+            resultsSubtitle.textContent = `${matches.length} results · ${meta.processing_time}s processing · Hybrid Similarity scoring`;
+        }
+
+        matches.forEach((match, i) => {
+            const card = document.createElement('div');
+            card.className = 'result-card';
+            card.dataset.index = i;
+
+            const imgPath = match.image_path.replace(/\\/g, '/');
+            const score = match.similarity_score;
+            const featScore = match.feature_similarity;
+            const colScore = match.color_similarity;
+            const texScore = match.texture_similarity;
+            const rank = match.rank || (i + 1);
+            const isTop = rank === 1;
+
+            let heatmapHtml = '';
+            if (match.heatmap_path) {
+                heatmapHtml = `<img src="/${match.heatmap_path}" class="heatmap-img" alt="Grad-CAM">`;
+            }
+
+            card.innerHTML = `
+                <div class="rank-badge${isTop ? ' top' : ''}">#${rank}</div>
+                <div class="img-wrapper">
+                    <img src="/dataset/${imgPath}" class="base-img" alt="Match" loading="lazy">
+                    ${heatmapHtml}
+                </div>
+                <div class="card-footer">
+                    <div class="score-row">
+                        <span class="score-label">Hybrid Score</span>
+                        <span class="score-value">${(score * 100).toFixed(1)}%</span>
+                    </div>
+                    <div class="score-bar-wrap">
+                        <div class="score-bar-fill" style="width:${Math.min(score * 100, 100)}%"></div>
+                    </div>
+                    <div class="breakdown-mini">
+                        <span class="breakdown-pill feat">Shape: ${(featScore * 100).toFixed(0)}%</span>
+                        <span class="breakdown-pill col">Color: ${(colScore * 100).toFixed(0)}%</span>
+                        <span class="breakdown-pill tex">Texture: ${(texScore * 100).toFixed(0)}%</span>
+                    </div>
+                    <div class="card-actions">
+                        <button class="btn-compare" data-index="${i}">
+                            <i data-lucide="columns-2"></i> Compare
+                        </button>
+                        <button class="btn-thumb up" data-path="${imgPath}" data-rating="1">
+                            <i data-lucide="thumbs-up"></i>
+                        </button>
+                        <button class="btn-thumb down" data-path="${imgPath}" data-rating="-1">
+                            <i data-lucide="thumbs-down"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            resultsGrid.appendChild(card);
+        });
+
+        lucide.createIcons();
+
+        gsap.fromTo('.result-card',
+            { y: 30, opacity: 0 },
+            { y: 0, opacity: 1, duration: 0.5, stagger: 0.06, ease: 'power2.out' }
+        );
+
+        resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+        document.querySelectorAll('.btn-compare').forEach(btn => {
+            btn.addEventListener('click', e => {
+                e.stopPropagation();
+                const idx = parseInt(btn.dataset.index);
+                openCompareModal(matches[idx]);
+            });
+        });
+
+        document.querySelectorAll('.btn-thumb').forEach(btn => {
+            btn.addEventListener('click', e => {
+                e.stopPropagation();
+                submitFeedback(btn.dataset.path, parseInt(btn.dataset.rating), btn);
+            });
+        });
+
+        if (xaiToggle.checked) document.body.classList.add('xai-active');
+    }
+
+    /* ── XAI Toggle ────────────────────────────────────── */
+    xaiToggle.addEventListener('change', function () {
+        if (this.checked) document.body.classList.add('xai-active');
+        else document.body.classList.remove('xai-active');
+    });
+
+    /* ── Feature Tabs ──────────────────────────────────── */
     if (tabGlobal && tabYolo) {
         tabGlobal.addEventListener('click', () => {
             tabGlobal.classList.add('active');
             tabYolo.classList.remove('active');
-            tabIndicator.style.transform = 'translateX(0%)';
+            if (tabIndicator) tabIndicator.style.transform = 'translateX(0%)';
             document.body.classList.remove('yolo-active');
-            roiInstruction.innerHTML = 'Scan complete. Switch to Deep Object Scan to search by region.';
-            // Run global search when switching back
-            if (currentFilepath) performSearch(currentFilepath, null);
+            roiInstruction.innerHTML = 'Global scan mode. All bounding boxes shown.';
         });
-
         tabYolo.addEventListener('click', () => {
             tabYolo.classList.add('active');
             tabGlobal.classList.remove('active');
-            tabIndicator.style.transform = 'translateX(100%)';
+            if (tabIndicator) tabIndicator.style.transform = 'translateX(100%)';
             document.body.classList.add('yolo-active');
-            roiInstruction.innerHTML = 'Deep scan enabled. Select a bounding box to perform a region-specific search.';
+            roiInstruction.innerHTML = 'Deep scan enabled. Click a bounding box to run a region-specific search.';
         });
     }
 
-    // 5. Search
-    async function performSearch(filepath, cropCoords) {
-        loader.classList.remove('hidden');
-        if (!cropCoords) resultsSection.classList.add('hidden'); // Clear results only for fresh searches
+    /* ── Feedback ──────────────────────────────────────── */
+    async function submitFeedback(resultPath, rating, btn) {
+        const key = `${resultPath}-${rating}`;
+        if (feedbackState[key]) return;
+        feedbackState[key] = true;
 
-        const formData = new FormData();
-        formData.append('filepath', filepath);
-        formData.append('xai_enabled', xaiToggle.checked);
-        if (cropCoords) formData.append('crop_data', JSON.stringify(cropCoords));
+        const siblingRating = rating === 1 ? -1 : 1;
+        const siblingKey = `${resultPath}-${siblingRating}`;
+        feedbackState[siblingKey] = false;
+
+        btn.classList.add('active');
+        const sibling = btn.parentElement.querySelector(`.btn-thumb[data-rating="${siblingRating}"]`);
+        if (sibling) sibling.classList.remove('active');
 
         try {
-            const response = await fetch('/api/search', { method: 'POST', body: formData });
-            const data = await response.json();
+            await fetch('/api/feedback', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ result_path: resultPath, rating })
+            });
+        } catch (e) {}
+    }
 
-            loader.classList.add('hidden');
-            if (data.success) {
-                displayResults(data.matches);
+    /* ── Comparison Modal ──────────────────────────────── */
+    const compareModal = document.getElementById('compare-modal');
+    const compareAfter = document.getElementById('compare-after');
+    const compareDivider = document.getElementById('compare-divider');
+    const compareSlider = document.getElementById('compare-slider');
+    const compareQueryImg = document.getElementById('compare-query-img');
+    const compareResultImg = document.getElementById('compare-result-img');
+    const breakdownBars = document.getElementById('breakdown-bars');
+    const breakdownExplanation = document.getElementById('breakdown-explanation');
+    const btnFeedbackUp = document.getElementById('btn-feedback-up');
+    const btnFeedbackDown = document.getElementById('btn-feedback-down');
+    const modalClose = document.getElementById('modal-close');
+
+    function openCompareModal(match) {
+        activeCompareResult = match;
+
+        compareQueryImg.src = currentQuerySrc || '';
+        compareResultImg.src = `/dataset/${match.image_path}`;
+
+        compareSlider.value = 50;
+        updateCompareSlider(50);
+
+        renderBreakdown(match);
+        fetchExplanation(match);
+
+        btnFeedbackUp.classList.remove('active');
+        btnFeedbackDown.classList.remove('active');
+
+        compareModal.classList.remove('hidden');
+        gsap.fromTo('.modal-panel', { scale: 0.95, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.3, ease: 'power2.out' });
+        lucide.createIcons();
+    }
+
+    function updateCompareSlider(val) {
+        const pct = val + '%';
+        compareAfter.style.clipPath = `inset(0 ${100 - val}% 0 0)`;
+        compareDivider.style.left = pct;
+    }
+
+    compareSlider.addEventListener('input', () => updateCompareSlider(compareSlider.value));
+
+    function renderBreakdown(match) {
+        const feat = Math.round((match.feature_similarity || 0) * 100);
+        const col = Math.round((match.color_similarity || 0) * 100);
+        const tex = Math.round((match.texture_similarity || 0) * 100);
+
+        breakdownBars.innerHTML = `
+            <div class="breakdown-row">
+                <span class="breakdown-name">Shape / Structure</span>
+                <div class="breakdown-bar-wrap">
+                    <div class="breakdown-bar-fill shape" style="width:${feat}%"></div>
+                </div>
+                <span class="breakdown-pct">${feat}%</span>
+            </div>
+            <div class="breakdown-row">
+                <span class="breakdown-name">Color Palette</span>
+                <div class="breakdown-bar-wrap">
+                    <div class="breakdown-bar-fill color" style="width:${col}%"></div>
+                </div>
+                <span class="breakdown-pct">${col}%</span>
+            </div>
+            <div class="breakdown-row">
+                <span class="breakdown-name">Texture Detail</span>
+                <div class="breakdown-bar-wrap">
+                    <div class="breakdown-bar-fill texture" style="width:${tex}%"></div>
+                </div>
+                <span class="breakdown-pct">${tex}%</span>
+            </div>
+        `;
+        breakdownExplanation.textContent = 'Fetching AI explanation...';
+    }
+
+    async function fetchExplanation(match) {
+        try {
+            const res = await fetch('/api/explain', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    query_path: currentFilepath || '',
+                    result_path: match.image_path,
+                    feature_similarity: match.feature_similarity,
+                    color_similarity: match.color_similarity,
+                    texture_similarity: match.texture_similarity
+                })
+            });
+            const data = await res.json();
+            if (data.explanation) {
+                breakdownExplanation.textContent = data.explanation;
             }
-        } catch (error) {
-            console.error("Search Error:", error);
-            loader.classList.add('hidden');
+        } catch (e) {
+            breakdownExplanation.textContent = 'Unable to fetch explanation.';
         }
     }
 
-    // 6. Display Results
-    function displayResults(matches) {
-        resultsSection.classList.remove('hidden');
-        resultsGrid.innerHTML = '';
+    modalClose.addEventListener('click', () => {
+        gsap.to('.modal-panel', { scale: 0.95, opacity: 0, duration: 0.2, onComplete: () => {
+            compareModal.classList.add('hidden');
+            gsap.set('.modal-panel', { scale: 1, opacity: 1 });
+        }});
+    });
 
-        matches.forEach((match) => {
-            const card = document.createElement('div');
-            card.className = 'result-card';
-            const imgPath = match.image_path.replace(/\\/g, '/');
+    compareModal.addEventListener('click', e => {
+        if (e.target === compareModal) modalClose.click();
+    });
 
-            let heatmapImg = '';
-            if (match.heatmap_path) {
-                const heatmapPath = match.heatmap_path.replace(/\\/g, '/');
-                heatmapImg = `<img src="/${heatmapPath}" alt="XAI Heatmap" class="heatmap-img">`;
+    btnFeedbackUp.addEventListener('click', () => {
+        if (activeCompareResult) {
+            submitFeedback(activeCompareResult.image_path, 1, btnFeedbackUp);
+            btnFeedbackDown.classList.remove('active');
+        }
+    });
+
+    btnFeedbackDown.addEventListener('click', () => {
+        if (activeCompareResult) {
+            submitFeedback(activeCompareResult.image_path, -1, btnFeedbackDown);
+            btnFeedbackUp.classList.remove('active');
+        }
+    });
+
+    /* ── History ───────────────────────────────────────── */
+    async function loadHistory() {
+        const grid = document.getElementById('history-grid');
+        grid.innerHTML = '<div class="history-loading"><div class="spinner"></div></div>';
+
+        try {
+            const res = await fetch('/api/history');
+            const data = await res.json();
+            const items = data.history || [];
+
+            if (items.length === 0) {
+                grid.innerHTML = '<div class="history-empty">No search history yet. Run a visual search to get started.</div>';
+                return;
             }
 
-            card.innerHTML = `
-                <div class="img-wrapper">
-                    <img src="/dataset/${imgPath}" alt="Similar Image" class="base-img">
-                    ${heatmapImg}
-                </div>
-                <div class="score-container">
-                    <span class="score-label">Similarity</span>
-                    <span class="score-value">${(match.similarity_score * 100).toFixed(1)}%</span>
-                </div>
-            `;
-            resultsGrid.appendChild(card);
-        });
-
-        // Elegant cascading fade-up
-        gsap.fromTo(".result-card",
-            { y: 30, opacity: 0 },
-            { y: 0, opacity: 1, duration: 0.5, stagger: 0.05, ease: "power2.out" }
-        );
-
-        // Scroll to results smoothly
-        resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            grid.innerHTML = '';
+            items.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'history-card';
+                const ts = new Date(item.timestamp).toLocaleString();
+                card.innerHTML = `
+                    <div class="history-card-top">
+                        <div class="history-icon"><i data-lucide="image"></i></div>
+                        <div class="history-filename">${item.query_image}</div>
+                    </div>
+                    <div class="history-meta">
+                        <div class="history-meta-item">
+                            <span class="history-meta-label">Results</span>
+                            <span class="history-meta-value">${item.result_count}</span>
+                        </div>
+                        <div class="history-meta-item">
+                            <span class="history-meta-label">Time</span>
+                            <span class="history-meta-value">${(item.processing_time || 0).toFixed(2)}s</span>
+                        </div>
+                        <div class="history-meta-item">
+                            <span class="history-meta-label">Date</span>
+                            <span class="history-meta-value">${ts}</span>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+            lucide.createIcons();
+        } catch (e) {
+            grid.innerHTML = '<div class="history-empty">Failed to load history.</div>';
+        }
     }
 
-    xaiToggle.addEventListener('change', function () {
-        if (this.checked) document.body.classList.add('xai-active');
-        else document.body.classList.remove('xai-active');
-        // Handle window resize for bounding boxes
-        window.addEventListener('resize', () => {
-            if (bboxesContainer.innerHTML !== '') {
-                // Re-fetch or re-use detection data if possible, for now just clear to avoid misalignment
-                // A better way is to store the last boxes and re-draw them
+    /* ── 3D Embedding Space ─────────────────────────────── */
+    async function initSpace3D() {
+        const empty = document.getElementById('space3d-empty');
+        const canvas = document.getElementById('space3d-canvas');
+
+        let data;
+        try {
+            const res = await fetch('/api/embeddings');
+            data = await res.json();
+        } catch (e) { return; }
+
+        if (!data.points || data.points.length < 2) {
+            empty.style.display = 'flex';
+            canvas.style.display = 'none';
+            return;
+        }
+
+        empty.style.display = 'none';
+        canvas.style.display = 'block';
+
+        if (space3dInitialized) {
+            render3D(canvas, data);
+            return;
+        }
+        space3dInitialized = true;
+        render3D(canvas, data);
+    }
+
+    function render3D(canvas, data) {
+        const container = document.getElementById('space3d-container');
+        const W = container.clientWidth;
+        const H = container.clientHeight;
+
+        const scene3 = new THREE.Scene();
+        const cam3 = new THREE.PerspectiveCamera(60, W / H, 0.01, 100);
+        cam3.position.set(0, 0, 3);
+
+        const ren3 = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+        ren3.setSize(W, H);
+        ren3.setPixelRatio(window.devicePixelRatio);
+
+        const points = data.points || [];
+        const scores = data.scores || [];
+        const imagePaths = data.image_paths || [];
+
+        const scale = 2;
+        const geoms = [];
+
+        points.forEach((pt, i) => {
+            const isQuery = i === 0;
+            const score = scores[i] || 0;
+
+            let color;
+            if (isQuery) {
+                color = new THREE.Color(1, 1, 1);
+            } else if (score > 0.7) {
+                color = new THREE.Color(0.06, 0.73, 0.51);
+            } else if (score > 0.4) {
+                color = new THREE.Color(0.23, 0.51, 0.96);
+            } else {
+                color = new THREE.Color(0.96, 0.62, 0.04);
+            }
+
+            const size = isQuery ? 0.12 : 0.06 + score * 0.04;
+            const geom = new THREE.SphereGeometry(size, 16, 16);
+            const mat = new THREE.MeshBasicMaterial({
+                color,
+                transparent: true,
+                opacity: isQuery ? 1 : 0.85
+            });
+            const mesh = new THREE.Mesh(geom, mat);
+            mesh.position.set(pt[0] * scale, pt[1] * scale, pt[2] * scale);
+            mesh.userData = { isQuery, score, imagePath: imagePaths[i] };
+            scene3.add(mesh);
+            geoms.push(mesh);
+
+            if (isQuery) {
+                const glowGeom = new THREE.SphereGeometry(size * 2.5, 16, 16);
+                const glowMat = new THREE.MeshBasicMaterial({ color: 0x3b82f6, transparent: true, opacity: 0.08 });
+                const glow = new THREE.Mesh(glowGeom, glowMat);
+                glow.position.copy(mesh.position);
+                scene3.add(glow);
             }
         });
 
-        // Store last detections for responsive redraw
-        let lastDetections = [];
+        let isDragging = false;
+        let prevMouse = { x: 0, y: 0 };
+        let rotation = { x: 0, y: 0 };
 
-        // Modified draw function to store data
-        const originalDraw = drawBoundingBoxes;
-        drawBoundingBoxes = function (boxes) {
-            lastDetections = boxes;
-            originalDraw(boxes);
-        };
-
-        window.addEventListener('resize', () => {
-            if (lastDetections.length > 0) {
-                drawBoundingBoxes(lastDetections);
-            }
+        canvas.addEventListener('mousedown', e => { isDragging = true; prevMouse = { x: e.clientX, y: e.clientY }; });
+        window.addEventListener('mouseup', () => { isDragging = false; });
+        window.addEventListener('mousemove', e => {
+            if (!isDragging) return;
+            const dx = e.clientX - prevMouse.x;
+            const dy = e.clientY - prevMouse.y;
+            rotation.y += dx * 0.005;
+            rotation.x += dy * 0.005;
+            prevMouse = { x: e.clientX, y: e.clientY };
         });
+
+        canvas.addEventListener('wheel', e => {
+            cam3.position.z = Math.max(0.5, Math.min(8, cam3.position.z + e.deltaY * 0.005));
+        });
+
+        let animId;
+        function animate3() {
+            animId = requestAnimationFrame(animate3);
+            if (!isDragging) { rotation.y += 0.003; }
+            const group = new THREE.Group();
+            geoms.forEach(m => {
+                scene3.remove(m);
+                group.add(m);
+            });
+            group.rotation.y = rotation.y;
+            group.rotation.x = rotation.x;
+            scene3.add(group);
+            ren3.render(scene3, cam3);
+            scene3.remove(group);
+            geoms.forEach(m => {
+                m.position.applyEuler(new THREE.Euler(0, 0.003, 0));
+                scene3.add(m);
+            });
+            scene3.remove(group);
+        }
+
+        function betterAnimate() {
+            cancelAnimationFrame(animId);
+            const pivot = new THREE.Object3D();
+            scene3.add(pivot);
+            geoms.forEach(m => {
+                scene3.remove(m);
+                pivot.add(m);
+            });
+
+            function loop() {
+                animId = requestAnimationFrame(loop);
+                if (!isDragging) {
+                    pivot.rotation.y += 0.004;
+                } else {
+                    pivot.rotation.y = rotation.y;
+                    pivot.rotation.x = rotation.x;
+                }
+                ren3.render(scene3, cam3);
+            }
+            loop();
+        }
+        betterAnimate();
+    }
+
+    /* ── Window resize ──────────────────────────────────── */
+    window.addEventListener('resize', () => {
+        if (lastDetections.length > 0 && queryPreview.complete) {
+            drawBoundingBoxes(lastDetections);
+        }
     });
+
 });
