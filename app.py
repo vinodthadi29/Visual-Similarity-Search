@@ -10,7 +10,7 @@ from core.explainability import GradCAMExplainer
 from core.object_detector import ObjectDetector
 
 app = Flask(__name__)
-app.secret_key = 'astra-guardian-secret-key-3d'
+app.secret_key = os.environ.get('SESSION_SECRET', os.urandom(24))
 USERS_FILE = 'users.json'
 
 # Configure folders
@@ -54,12 +54,6 @@ logging.getLogger('werkzeug').addHandler(log_handler) # Capture Flask request lo
 def log_request_info():
     app.logger.info(f"Request: {request.method} {request.path}")
 
-@app.route('/debug/users')
-def debug_users():
-    conn = get_db_connection()
-    users = conn.execute('SELECT username FROM users').fetchall()
-    conn.close()
-    return jsonify([u['username'] for u in users])
 
 print("Loading ML Pipeline (YOLOv8, MobileNetV2, FAISS, Grad-CAM)...")
 detector = ObjectDetector()
