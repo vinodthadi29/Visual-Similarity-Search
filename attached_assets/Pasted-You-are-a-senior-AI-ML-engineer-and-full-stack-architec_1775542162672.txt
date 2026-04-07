@@ -1,0 +1,186 @@
+You are a senior AI/ML engineer and full-stack architect.
+Upgrade my AstraVision project to ensure 3D Space, History, and YOLO detection are fully functional, real-time, and production-grade.
+
+⚠️ Important:
+
+Do NOT create mock/demo features
+All features must use real backend data
+Do NOT break existing UI
+Maintain smooth real-time UX
+🎯 1. FIX & UPGRADE — 3D EMBEDDING SPACE (CRITICAL)
+❌ Current Issue:
+
+3D space is static / not reflecting real embeddings
+
+✅ Required Implementation:
+Backend:
+Create endpoint:
+GET /api/embeddings/visualization
+
+Return:
+
+{
+  "query": { "id": "img1", "vector": [...], "thumbnail": "url" },
+  "results": [
+    { "id": "img2", "vector": [...], "score": 0.92, "thumbnail": "url" }
+  ]
+}
+Processing:
+Apply PCA or t-SNE to reduce 1280-dim → 3D
+Cache results for performance
+Frontend (Three.js):
+Render:
+Query = glowing white node
+Results = colored nodes (color by similarity)
+Add:
+hover → show image preview
+click → open comparison modal
+dynamic clustering animation
+Interaction:
+Mouse move → slight node attraction
+Smooth transitions when new search is performed
+🎯 2. FIX & UPGRADE — SEARCH HISTORY (REAL BACKEND)
+❌ Current Issue:
+
+History is static / not properly stored
+
+✅ Backend:
+
+Create table:
+
+search_history (
+  id,
+  user_id,
+  image_path,
+  results_count,
+  processing_time,
+  created_at
+)
+APIs:
+POST /api/history/save
+GET /api/history/list
+Save automatically after search:
+query image
+number of results
+time taken
+Frontend:
+Fetch history dynamically
+Show:
+thumbnail
+time
+result count
+Add:
+click → reload that search
+delete history option
+🎯 3. UPGRADE YOLO DETECTION (MAKE IT POWERFUL)
+❌ Current:
+
+Basic bounding box only
+
+✅ Required Upgrades:
+Use YOLOv8 (Ultralytics)
+
+Enhance output:
+
+{
+  "objects": [
+    {
+      "label": "shoe",
+      "confidence": 0.94,
+      "bbox": [x1, y1, x2, y2],
+      "area": 0.32
+    }
+  ]
+}
+Features:
+🔹 Multi-object detection UI
+Show labels + confidence
+Highlight objects on hover
+🔹 Object-based search
+
+Flow:
+
+User clicks bounding box →
+crop →
+send to /api/search
+
+🔹 Smart filtering
+
+Add filters:
+
+search only detected class
+example: "only shoes"
+🎯 4. REAL-TIME EXPERIENCE (MAKE IT FEEL ALIVE)
+Backend:
+Use Server-Sent Events (SSE)
+
+Stream:
+
+/api/search/stream
+
+Stages:
+
+uploading
+detecting
+extracting
+searching
+analyzing
+Frontend:
+show progress animation
+update UI per stage
+🎯 5. IMPROVE SIMILARITY QUALITY
+
+Enhance scoring:
+
+Final Score =
+0.6 * deep features +
+0.2 * color similarity +
+0.1 * texture +
+0.1 * object match
+🎯 6. ADD “AI EXPLAIN MODE”
+
+New API:
+
+/api/explain
+
+Return:
+
+heatmap
+explanation text
+feature breakdown
+
+Frontend:
+
+show:
+“Why similar?”
+animated bars
+🎯 7. PERFORMANCE OPTIMIZATION
+Cache embeddings
+Lazy load models
+Resize images before processing
+Batch FAISS queries
+🎯 8. ERROR HANDLING (IMPORTANT)
+
+Fix:
+
+empty dataset → show UI message
+invalid image → proper error
+API failure → fallback UI
+🎯 9. FINAL EXPECTATION
+
+After upgrade, system must:
+
+✅ Show real 3D embedding clusters
+✅ Store and display real history
+✅ Perform real YOLO-based object search
+✅ Show real-time AI processing
+✅ Provide explainable results
+✅ Feel like a real AI product
+
+🎯 BONUS (IF POSSIBLE)
+
+Add:
+
+drag-drop upload
+camera input
+voice search

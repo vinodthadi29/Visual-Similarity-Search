@@ -360,6 +360,45 @@ def get_embeddings():
     return jsonify(data)
 
 
+@app.route('/api/embeddings/visualization')
+def get_embeddings_viz():
+    if 'user' not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+    username = session.get('user')
+    raw = last_embeddings_store.get(username)
+    if not raw or not raw.get('points'):
+        return jsonify({"query": None, "results": []})
+
+    points = raw.get('points', [])
+    scores = raw.get('scores', [])
+    image_paths = raw.get('image_paths', [])
+
+    query_point = points[0] if points else [0, 0, 0]
+    query_thumbnail = None
+
+    result_nodes = []
+    for i in range(1, len(points)):
+        img_path = image_paths[i] if i < len(image_paths) else ''
+        score = scores[i] if i < len(scores) else 0
+        thumbnail_url = f"/dataset/{img_path}" if img_path else None
+        result_nodes.append({
+            "id": f"result_{i}",
+            "vector": points[i],
+            "score": round(score, 4),
+            "thumbnail": thumbnail_url,
+            "image_path": img_path
+        })
+
+    return jsonify({
+        "query": {
+            "id": "query",
+            "vector": query_point,
+            "thumbnail": query_thumbnail
+        },
+        "results": result_nodes
+    })
+
+
 @app.route('/api/feedback', methods=['POST'])
 def feedback():
     if 'user' not in session:
@@ -398,6 +437,24 @@ def history():
         ).fetchall()
         conn.close()
         return jsonify({'history': [dict(r) for r in rows]})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/history/<int:item_id>', methods=['DELETE'])
+def delete_history_item(item_id):
+    if 'user' not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+    username = session.get('user')
+    try:
+        conn = get_db_connection()
+        conn.execute(
+            'DELETE FROM search_history WHERE id = ? AND username = ?',
+            (item_id, username)
+        )
+        conn.commit()
+        conn.close()
+        return jsonify({"success": True})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

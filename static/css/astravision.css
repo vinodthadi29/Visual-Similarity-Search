@@ -687,3 +687,132 @@
     .modal-header, .similarity-breakdown, .modal-footer { padding-left: 1rem; padding-right: 1rem; }
     .view-tabs { flex-wrap: wrap; }
 }
+
+/* === Class Filter Bar === */
+.class-filter-bar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: rgba(255,255,255,0.03);
+    border-top: 1px solid rgba(255,255,255,0.05);
+    border-radius: 0 0 12px 12px;
+}
+
+.filter-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: rgba(255,255,255,0.3);
+    margin-right: 0.25rem;
+}
+
+.class-pill {
+    padding: 0.25rem 0.75rem;
+    border-radius: 99px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.05);
+    color: rgba(255,255,255,0.55);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.class-pill:hover { background: rgba(59,130,246,0.2); border-color: rgba(59,130,246,0.5); color: white; }
+.class-pill.active { background: rgba(59,130,246,0.25); border-color: #3b82f6; color: #93c5fd; }
+
+/* === 3D Tooltip === */
+.space3d-tooltip {
+    position: absolute;
+    display: none;
+    pointer-events: none;
+    background: rgba(10,12,22,0.9);
+    border: 1px solid rgba(59,130,246,0.35);
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.78rem;
+    color: white;
+    backdrop-filter: blur(8px);
+    z-index: 10;
+    max-width: 200px;
+    line-height: 1.4;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+.space3d-tooltip span {
+    font-size: 0.7rem;
+    color: rgba(255,255,255,0.45);
+}
+.space3d-container { position: relative; }
+
+/* === 3D Controls Hint === */
+.space3d-controls-hint {
+    text-align: center;
+    font-size: 0.72rem;
+    color: rgba(255,255,255,0.2);
+    margin-top: 0.5rem;
+    letter-spacing: 0.3px;
+}
+
+/* === 3D Legend – mid node === */
+.legend-dot.mid { background: #3b82f6; }
+
+/* === History – delete button === */
+.history-card-top {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.history-delete-btn {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: rgba(255,255,255,0.2);
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s, background 0.2s;
+    flex-shrink: 0;
+}
+.history-delete-btn:hover { color: #f87171; background: rgba(248,113,113,0.1); }
+.history-delete-btn svg { width: 14px; height: 14px; }
+
+.history-date { font-size: 0.75rem !important; }
+
+/* === No-results message === */
+.no-results-msg {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 3rem;
+    color: rgba(255,255,255,0.3);
+    text-align: center;
+}
+.no-results-msg svg { width: 40px; height: 40px; opacity: 0.4; }
+.no-results-msg p { font-size: 1.1rem; font-weight: 600; margin: 0; }
+.no-results-msg span { font-size: 0.8rem; color: rgba(255,255,255,0.2); }
+.no-results-msg code { font-size: 0.75rem; background: rgba(255,255,255,0.05); padding: 0.15rem 0.4rem; border-radius: 4px; }
+
+/* === Result category label === */
+.result-category {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #60a5fa;
+    margin-bottom: 0.4rem;
+}
+
+/* === Bounding box hover === */
+.bounding-box.hovered {
+    box-shadow: 0 0 0 2px #60a5fa, 0 0 20px rgba(59,130,246,0.3);
+}

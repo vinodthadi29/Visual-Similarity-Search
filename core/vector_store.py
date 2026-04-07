@@ -26,15 +26,14 @@ class VectorStore:
             return []
             
         query_np = np.array([query_vector]).astype('float32')
-        
-        # Returns the similarity scores and the index IDs of the matches
+        k = min(k, self.index.ntotal)
         scores, indices = self.index.search(query_np, k)
         
         results = []
         for i, idx in enumerate(indices[0]):
             if idx != -1 and idx < len(self.image_paths):
                 results.append({
-                    "image_path": self.image_paths[idx],
+                    "image_path": self.image_paths[idx].replace('\\', '/'),
                     "similarity_score": float(scores[0][i])
                 })
         return results
@@ -51,4 +50,5 @@ class VectorStore:
         if os.path.exists(self.index_path) and os.path.exists(self.paths_file):
             self.index = faiss.read_index(self.index_path)
             with open(self.paths_file, 'rb') as f:
-                self.image_paths = pickle.load(f)
+                raw_paths = pickle.load(f)
+            self.image_paths = [p.replace('\\', '/') for p in raw_paths]

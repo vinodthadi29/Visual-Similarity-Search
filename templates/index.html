@@ -124,6 +124,7 @@
                     <img id="query-preview" src="" alt="Query Preview">
                     <div id="bounding-boxes-container"></div>
                 </div>
+                <div id="class-filter-bar" class="class-filter-bar hidden"></div>
             </section>
 
             <!-- Results -->
@@ -164,12 +165,15 @@
                     <p>No embeddings yet. Run a visual search to populate the 3D space.</p>
                 </div>
                 <canvas id="space3d-canvas"></canvas>
+                <div id="space3d-tooltip" class="space3d-tooltip"></div>
             </div>
             <div class="space3d-legend">
                 <div class="legend-item"><span class="legend-dot query"></span> Query Image</div>
-                <div class="legend-item"><span class="legend-dot high"></span> High Similarity</div>
-                <div class="legend-item"><span class="legend-dot low"></span> Low Similarity</div>
+                <div class="legend-item"><span class="legend-dot high"></span> High Similarity (&gt;70%)</div>
+                <div class="legend-item"><span class="legend-dot mid"></span> Medium (40–70%)</div>
+                <div class="legend-item"><span class="legend-dot low"></span> Low (&lt;40%)</div>
             </div>
+            <div class="space3d-controls-hint">Drag to rotate &nbsp;·&nbsp; Scroll to zoom &nbsp;·&nbsp; Click node to compare</div>
         </div>
 
         <!-- === HISTORY VIEW === -->
