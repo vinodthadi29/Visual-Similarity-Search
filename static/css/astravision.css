@@ -816,3 +816,58 @@
 .bounding-box.hovered {
     box-shadow: 0 0 0 2px #60a5fa, 0 0 20px rgba(59,130,246,0.3);
 }
+
+/* ======================================================
+   FUNCTIONAL OVERRIDES — fix hidden bbox container,
+   yolo controls visibility, and 3D space sizing
+   ====================================================== */
+
+/* Always show bbox container — JS controls content via innerHTML */
+#bounding-boxes-container {
+    display: block !important;
+}
+
+/* Show yolo controls whenever they are not explicitly hidden */
+.feature-tabs#yolo-controls:not(.hidden) {
+    opacity: 1 !important;
+    transform: translateY(0) !important;
+}
+
+/* Ensure 3D canvas fills its container properly */
+#space3d-canvas {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+}
+
+/* History grid layout */
+.history-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+}
+
+/* History card full layout */
+.history-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 1.25rem;
+    transition: border-color 0.2s, background 0.2s;
+    cursor: default;
+}
+.history-card:hover {
+    background: rgba(255,255,255,0.06);
+    border-color: rgba(59,130,246,0.3);
+}
+
+/* Fix: allow bbox labels (top:-24px) to overflow the image wrapper */
+.analysis-card .image-wrapper {
+    overflow: visible !important;
+}
+
+/* Ensure bbox container stays within image bounds */
+#bounding-boxes-container {
+    border-radius: 12px;
+    overflow: hidden;
+}

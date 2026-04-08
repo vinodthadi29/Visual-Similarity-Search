@@ -194,13 +194,27 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.boxes) {
                 lastDetections = data.boxes;
                 activeClassFilter = 'all';
-                if (queryPreview.complete) {
-                    drawBoundingBoxes(data.boxes);
-                    buildClassFilter(data.boxes);
-                } else {
-                    queryPreview.onload = () => {
+                /* Wait for image to be fully laid out before drawing boxes */
+                const doDraw = () => {
+                    if (queryPreview.naturalWidth > 0) {
                         drawBoundingBoxes(data.boxes);
                         buildClassFilter(data.boxes);
+                    } else {
+                        /* Image not ready yet — wait for load */
+                        queryPreview.onload = () => {
+                            drawBoundingBoxes(data.boxes);
+                            buildClassFilter(data.boxes);
+                        };
+                    }
+                };
+                if (queryPreview.complete) {
+                    requestAnimationFrame(doDraw);
+                } else {
+                    queryPreview.onload = () => {
+                        requestAnimationFrame(() => {
+                            drawBoundingBoxes(data.boxes);
+                            buildClassFilter(data.boxes);
+                        });
                     };
                 }
                 if (data.boxes.length > 0) {
@@ -208,8 +222,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     tabGlobal.classList.add('active');
                     tabYolo.classList.remove('active');
                     if (tabIndicator) tabIndicator.style.transform = 'translateX(0%)';
-                    roiInstruction.innerHTML = `Scan complete. Found <strong>${data.boxes.length}</strong> object${data.boxes.length !== 1 ? 's' : ''}. Switch to Deep Object Scan to search by region.`;
+                    roiInstruction.innerHTML = `Scan complete — found <strong>${data.boxes.length}</strong> object${data.boxes.length !== 1 ? 's' : ''}. Click any box to search that region.`;
                 } else {
+                    yoloControls.classList.add('hidden');
                     roiInstruction.innerHTML = 'No objects detected. Global neural scan complete.';
                 }
             }
@@ -274,21 +289,20 @@ document.addEventListener('DOMContentLoaded', () => {
     function drawBoundingBoxes(boxes, classFilter) {
         bboxesContainer.innerHTML = '';
         if (!boxes || boxes.length === 0) return;
+        if (!queryPreview.naturalWidth || !queryPreview.naturalHeight) return;
 
         const filtered = classFilter && classFilter !== 'all'
             ? boxes.filter(b => b.label === classFilter)
             : boxes;
 
-        const rect = queryPreview.getBoundingClientRect();
-        const wrapperRect = queryPreview.parentElement.getBoundingClientRect();
-        bboxesContainer.style.width  = `${rect.width}px`;
-        bboxesContainer.style.height = `${rect.height}px`;
-        bboxesContainer.style.left   = `${rect.left - wrapperRect.left}px`;
-        bboxesContainer.style.top    = `${rect.top - wrapperRect.top}px`;
-        bboxesContainer.style.transform = 'none';
+        /* The bbox container is sized by CSS (position:absolute, top:0 left:0 w:100% h:100%)
+           relative to the image-wrapper which is inline-block = exact image size.
+           We only need to compute scale from natural → displayed pixels. */
+        const dispW = queryPreview.offsetWidth  || queryPreview.getBoundingClientRect().width;
+        const dispH = queryPreview.offsetHeight || queryPreview.getBoundingClientRect().height;
 
-        const scaleX = rect.width  / queryPreview.naturalWidth;
-        const scaleY = rect.height / queryPreview.naturalHeight;
+        const scaleX = dispW / queryPreview.naturalWidth;
+        const scaleY = dispH / queryPreview.naturalHeight;
 
         filtered.forEach((box, index) => {
             const div = document.createElement('div');
@@ -637,7 +651,7 @@ document.addEventListener('DOMContentLoaded', () => {
             items.forEach(item => {
                 const card = document.createElement('div');
                 card.className = 'history-card';
-                const ts = new Date(item.timestamp + 'Z').toLocaleString();
+                const ts = new Date(item.timestamp.replace(' ', 'T') + 'Z').toLocaleString();
                 card.innerHTML = `
                     <div class="history-card-top">
                         <div class="history-icon"><i data-lucide="image"></i></div>
@@ -708,7 +722,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (threeAnimId)    cancelAnimationFrame(threeAnimId);
         if (threeRenderer)  { threeRenderer.dispose(); threeRenderer = null; }
 
-        render3D(canvas, data, tooltip);
+        /* Use RAF so the browser lays out the now-visible container before we read its size */
+        requestAnimationFrame(() => render3D(canvas, data, tooltip));
     }
 
     function render3D(canvas, data, tooltip) {
