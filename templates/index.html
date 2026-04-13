@@ -7,12 +7,16 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/astravision.css') }}">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
-    <div id="three-bg"></div>
+    <!-- CSS-animated star background -->
+    <div id="star-bg">
+        <div class="stars s1"></div>
+        <div class="stars s2"></div>
+        <div class="stars s3"></div>
+    </div>
 
     <div class="app-container">
 
@@ -45,8 +49,8 @@
                 <button class="view-tab active" data-view="search">
                     <i data-lucide="scan-search"></i> Search
                 </button>
-                <button class="view-tab" data-view="space3d">
-                    <i data-lucide="globe"></i> 3D Space
+                <button class="view-tab" data-view="analytics">
+                    <i data-lucide="bar-chart-3"></i> Analytics
                 </button>
                 <button class="view-tab" data-view="history">
                     <i data-lucide="clock"></i> History
@@ -125,6 +129,11 @@
                     <div id="bounding-boxes-container"></div>
                 </div>
                 <div id="class-filter-bar" class="class-filter-bar hidden"></div>
+                <!-- Dominant Color Palette Strip -->
+                <div id="color-palette-strip" class="color-palette-strip hidden">
+                    <span class="palette-label">Dominant Colors</span>
+                    <div id="palette-swatches" class="palette-swatches"></div>
+                </div>
             </section>
 
             <!-- Results -->
@@ -135,6 +144,15 @@
                         <p id="results-subtitle">Top similarity matches from FAISS index</p>
                     </div>
                     <div class="results-controls">
+                        <select id="sort-select" class="sort-select" title="Sort results">
+                            <option value="score">Sort: Best Match</option>
+                            <option value="category">Sort: Category</option>
+                            <option value="color">Sort: Color Sim</option>
+                            <option value="texture">Sort: Texture Sim</option>
+                        </select>
+                        <button id="export-btn" class="export-btn" title="Export results as JSON">
+                            <i data-lucide="download"></i> Export
+                        </button>
                         <div class="toggle-container" id="xai-controls">
                             <span class="toggle-label">Grad-CAM</span>
                             <label class="premium-switch">
@@ -152,28 +170,98 @@
             </section>
         </div>
 
-        <!-- === 3D SPACE VIEW === -->
-        <div id="view-space3d" class="view hidden">
-            <div class="space3d-header">
-                <h2>Embedding Space Visualization</h2>
-                <p>Each node represents an image in 1280-dimensional feature space, reduced to 3D via PCA.</p>
-                <p class="space3d-hint">Run a search first to populate the space. Hover nodes to preview images.</p>
+        <!-- === ANALYTICS VIEW === -->
+        <div id="view-analytics" class="view hidden">
+            <div class="analytics-header">
+                <h2>Search Analytics</h2>
+                <p>Visual embedding map, color intelligence, and category insights from your last search.</p>
+                <p class="analytics-hint" id="analytics-hint">Run a search first to populate the analytics dashboard.</p>
             </div>
-            <div class="space3d-container" id="space3d-container">
-                <div class="space3d-empty" id="space3d-empty">
-                    <i data-lucide="globe"></i>
-                    <p>No embeddings yet. Run a visual search to populate the 3D space.</p>
+
+            <!-- Row 1: Embedding Map + Stats -->
+            <div class="analytics-row">
+                <!-- 2D Embedding Scatter -->
+                <div class="analytics-panel scatter-panel">
+                    <div class="panel-header">
+                        <i data-lucide="scatter-chart"></i>
+                        <h4>Embedding Space Map</h4>
+                        <span class="panel-badge">PCA 2D Projection</span>
+                    </div>
+                    <div class="scatter-wrap" id="scatter-wrap">
+                        <canvas id="scatter-canvas"></canvas>
+                        <div id="scatter-tooltip" class="scatter-tooltip"></div>
+                        <div class="scatter-empty" id="scatter-empty">
+                            <i data-lucide="scatter-chart"></i>
+                            <p>No data yet</p>
+                        </div>
+                    </div>
+                    <div class="scatter-legend">
+                        <div class="sleg"><span class="sleg-dot query"></span>Query</div>
+                        <div class="sleg"><span class="sleg-dot high"></span>&gt;70%</div>
+                        <div class="sleg"><span class="sleg-dot mid"></span>40–70%</div>
+                        <div class="sleg"><span class="sleg-dot low"></span>&lt;40%</div>
+                    </div>
                 </div>
-                <canvas id="space3d-canvas"></canvas>
-                <div id="space3d-tooltip" class="space3d-tooltip"></div>
+
+                <!-- Session Stats -->
+                <div class="analytics-panel stats-panel">
+                    <div class="panel-header">
+                        <i data-lucide="activity"></i>
+                        <h4>Session Statistics</h4>
+                        <span class="panel-badge">Live</span>
+                    </div>
+                    <div id="session-stats" class="session-stats">
+                        <div class="stat-tile">
+                            <div class="stat-tile-value" id="stat-total">—</div>
+                            <div class="stat-tile-label">Total Searches</div>
+                        </div>
+                        <div class="stat-tile">
+                            <div class="stat-tile-value" id="stat-avgtime">—</div>
+                            <div class="stat-tile-label">Avg. Process Time</div>
+                        </div>
+                        <div class="stat-tile">
+                            <div class="stat-tile-value" id="stat-topscore">—</div>
+                            <div class="stat-tile-label">Last Top Score</div>
+                        </div>
+                        <div class="stat-tile">
+                            <div class="stat-tile-value" id="stat-results">—</div>
+                            <div class="stat-tile-label">Last Result Count</div>
+                        </div>
+                    </div>
+                    <!-- Color Palette from query -->
+                    <div class="panel-header" style="margin-top:1.5rem">
+                        <i data-lucide="palette"></i>
+                        <h4>Query Color Palette</h4>
+                    </div>
+                    <div id="analytics-palette" class="analytics-palette">
+                        <p class="palette-empty">Upload an image to extract color palette</p>
+                    </div>
+                </div>
             </div>
-            <div class="space3d-legend">
-                <div class="legend-item"><span class="legend-dot query"></span> Query Image</div>
-                <div class="legend-item"><span class="legend-dot high"></span> High Similarity (&gt;70%)</div>
-                <div class="legend-item"><span class="legend-dot mid"></span> Medium (40–70%)</div>
-                <div class="legend-item"><span class="legend-dot low"></span> Low (&lt;40%)</div>
+
+            <!-- Row 2: Category Distribution -->
+            <div class="analytics-panel category-panel" id="category-panel">
+                <div class="panel-header">
+                    <i data-lucide="bar-chart-2"></i>
+                    <h4>Category Distribution</h4>
+                    <span class="panel-badge" id="cat-total-badge"></span>
+                </div>
+                <div id="category-chart" class="category-chart">
+                    <p class="cat-empty">Run a search to see category breakdown</p>
+                </div>
             </div>
-            <div class="space3d-controls-hint">Drag to rotate &nbsp;·&nbsp; Scroll to zoom &nbsp;·&nbsp; Click node to compare</div>
+
+            <!-- Row 3: Similarity Distribution -->
+            <div class="analytics-panel sim-panel" id="sim-panel">
+                <div class="panel-header">
+                    <i data-lucide="trending-up"></i>
+                    <h4>Similarity Score Distribution</h4>
+                    <span class="panel-badge" id="sim-panel-badge"></span>
+                </div>
+                <div id="sim-histogram" class="sim-histogram">
+                    <p class="cat-empty">Run a search to see score distribution</p>
+                </div>
+            </div>
         </div>
 
         <!-- === HISTORY VIEW === -->
@@ -181,6 +269,7 @@
             <div class="history-header">
                 <h2>Search History</h2>
                 <p>Your recent visual searches</p>
+                <div id="history-summary" class="history-summary hidden"></div>
             </div>
             <div id="history-grid" class="history-grid">
                 <div class="history-loading">
@@ -231,29 +320,6 @@
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
     <script src="{{ url_for('static', filename='js/ui-animations.js') }}"></script>
     <script>
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.getElementById('three-bg').appendChild(renderer.domElement);
-        const starsGeom = new THREE.BufferGeometry();
-        const posArray = new Float32Array(2000 * 3);
-        for (let i = 0; i < 2000 * 3; i++) posArray[i] = (Math.random() - 0.5) * 50;
-        starsGeom.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-        const starsMesh = new THREE.Points(starsGeom, new THREE.PointsMaterial({ size: 0.03, color: 0x3b82f6, transparent: true, opacity: 0.5 }));
-        scene.add(starsMesh);
-        camera.position.z = 15;
-        function animateBg() {
-            requestAnimationFrame(animateBg);
-            starsMesh.rotation.y += 0.0005;
-            renderer.render(scene, camera);
-        }
-        animateBg();
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
         lucide.createIcons();
     </script>
 </body>

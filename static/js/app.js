@@ -22,20 +22,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const pipelineMsg       = document.getElementById('pipeline-msg');
     const statsBar          = document.getElementById('stats-bar');
     const resultsSubtitle   = document.getElementById('results-subtitle');
+    const sortSelect        = document.getElementById('sort-select');
+    const exportBtn         = document.getElementById('export-btn');
+    const colorPaletteStrip = document.getElementById('color-palette-strip');
+    const paletteSatches    = document.getElementById('palette-swatches');
 
     /* ── State ─────────────────────────────────────────── */
     let currentFilepath   = null;
     let currentQuerySrc   = null;
     let lastResults       = [];
+    let lastMeta          = {};
     let lastDetections    = [];
     let activeCompareResult = null;
     let feedbackState     = {};
     let activeClassFilter = 'all';
-
-    /* Three.js 3D state — module-level so we can dispose */
-    let threeRenderer  = null;
-    let threeAnimId    = null;
-    let threeScene     = null;
+    let lastDominantColors = [];
 
     const stageMap = {
         uploaded:  'uploaded',
@@ -55,8 +56,8 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.classList.add('active');
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.getElementById(`view-${view}`).classList.add('active');
-            if (view === 'history') loadHistory();
-            if (view === 'space3d') initSpace3D();
+            if (view === 'history')   loadHistory();
+            if (view === 'analytics') initAnalytics();
             lucide.createIcons();
         });
     });
@@ -96,10 +97,21 @@ document.addEventListener('DOMContentLoaded', () => {
             bboxesContainer.innerHTML = '';
             classFilterBar.innerHTML = '';
             classFilterBar.classList.add('hidden');
+            colorPaletteStrip.classList.add('hidden');
             roiInstruction.innerHTML = 'Scanning image for objects...';
             yoloControls.classList.add('hidden');
             document.body.classList.remove('yolo-active');
             gsap.fromTo(previewContainer, { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: 'power2.out' });
+
+            /* Extract dominant colors from query image */
+            queryPreview.onload = () => {
+                lastDominantColors = extractDominantColors(queryPreview, 6);
+                renderPaletteStrip(lastDominantColors);
+            };
+            if (queryPreview.complete && queryPreview.naturalWidth > 0) {
+                lastDominantColors = extractDominantColors(queryPreview, 6);
+                renderPaletteStrip(lastDominantColors);
+            }
         };
     }
 
@@ -194,13 +206,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.boxes) {
                 lastDetections = data.boxes;
                 activeClassFilter = 'all';
-                /* Wait for image to be fully laid out before drawing boxes */
                 const doDraw = () => {
                     if (queryPreview.naturalWidth > 0) {
                         drawBoundingBoxes(data.boxes);
                         buildClassFilter(data.boxes);
                     } else {
-                        /* Image not ready yet — wait for load */
                         queryPreview.onload = () => {
                             drawBoundingBoxes(data.boxes);
                             buildClassFilter(data.boxes);
@@ -232,7 +242,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (data.stage === 'complete') {
             lastResults = data.results || [];
-            displayResults(data.results, data);
+            lastMeta    = data;
+            displayResults(lastResults, data);
             hidePipeline();
         }
 
@@ -247,16 +258,10 @@ document.addEventListener('DOMContentLoaded', () => {
             classFilterBar.classList.add('hidden');
             return;
         }
-
         const classCount = {};
-        boxes.forEach(b => {
-            classCount[b.label] = (classCount[b.label] || 0) + 1;
-        });
+        boxes.forEach(b => { classCount[b.label] = (classCount[b.label] || 0) + 1; });
 
-        if (Object.keys(classCount).length < 1) {
-            classFilterBar.classList.add('hidden');
-            return;
-        }
+        if (Object.keys(classCount).length < 1) { classFilterBar.classList.add('hidden'); return; }
 
         classFilterBar.innerHTML = '<span class="filter-label">Filter by class:</span>';
         classFilterBar.classList.remove('hidden');
@@ -295,9 +300,6 @@ document.addEventListener('DOMContentLoaded', () => {
             ? boxes.filter(b => b.label === classFilter)
             : boxes;
 
-        /* The bbox container is sized by CSS (position:absolute, top:0 left:0 w:100% h:100%)
-           relative to the image-wrapper which is inline-block = exact image size.
-           We only need to compute scale from natural → displayed pixels. */
         const dispW = queryPreview.offsetWidth  || queryPreview.getBoundingClientRect().width;
         const dispH = queryPreview.offsetHeight || queryPreview.getBoundingClientRect().height;
 
@@ -390,33 +392,36 @@ document.addEventListener('DOMContentLoaded', () => {
                     <span class="stat-value success">${matches.length > 0 ? (matches[0].similarity_score * 100).toFixed(1) + '%' : '—'}</span>
                 </div>
                 <div class="stat-item">
-                    <span class="stat-label">Model</span>
+                    <span class="stat-label">Engine</span>
                     <span class="stat-value">MobileNetV2 + FAISS</span>
                 </div>`;
             if (resultsSubtitle)
-                resultsSubtitle.textContent = `${matches.length} results · ${meta.processing_time}s · Hybrid Similarity (feature + color + texture)`;
+                resultsSubtitle.textContent = `${matches.length} results · ${meta.processing_time}s · Hybrid Similarity`;
         }
 
+        renderResultCards(matches);
+    }
+
+    function renderResultCards(matches) {
         resultsGrid.innerHTML = '';
         matches.forEach((match, i) => {
             const card = document.createElement('div');
             card.className = 'result-card';
             card.dataset.index = i;
 
-            const imgPath  = match.image_path.replace(/\\/g, '/');
-            const score    = match.similarity_score;
+            const imgPath   = match.image_path.replace(/\\/g, '/');
+            const score     = match.similarity_score;
             const featScore = match.feature_similarity;
             const colScore  = match.color_similarity;
             const texScore  = match.texture_similarity;
-            const rank = match.rank || (i + 1);
-            const isTop = rank === 1;
+            const rank      = match.rank || (i + 1);
+            const isTop     = rank === 1;
+            const category  = imgPath.includes('/') ? imgPath.split('/')[0] : '';
 
             let heatmapHtml = '';
             if (match.heatmap_path) {
                 heatmapHtml = `<img src="/${match.heatmap_path}" class="heatmap-img" alt="Grad-CAM">`;
             }
-
-            const category = imgPath.includes('/') ? imgPath.split('/')[0] : '';
 
             card.innerHTML = `
                 <div class="rank-badge${isTop ? ' top' : ''}">#${rank}</div>
@@ -465,7 +470,7 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.addEventListener('click', e => {
                 e.stopPropagation();
                 const idx = parseInt(btn.dataset.index);
-                openCompareModal(matches[idx]);
+                openCompareModal(lastResults[idx]);
             });
         });
 
@@ -477,6 +482,57 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         if (xaiToggle.checked) document.body.classList.add('xai-active');
+    }
+
+    /* ── Sort Results ──────────────────────────────────── */
+    if (sortSelect) {
+        sortSelect.addEventListener('change', () => {
+            if (!lastResults.length) return;
+            const key = sortSelect.value;
+            const sorted = [...lastResults].sort((a, b) => {
+                if (key === 'score')    return b.similarity_score - a.similarity_score;
+                if (key === 'color')    return b.color_similarity - a.color_similarity;
+                if (key === 'texture')  return b.texture_similarity - a.texture_similarity;
+                if (key === 'category') {
+                    const ca = (a.image_path.split('/')[0] || '').toLowerCase();
+                    const cb = (b.image_path.split('/')[0] || '').toLowerCase();
+                    return ca.localeCompare(cb);
+                }
+                return 0;
+            });
+            renderResultCards(sorted);
+        });
+    }
+
+    /* ── Export Results ────────────────────────────────── */
+    if (exportBtn) {
+        exportBtn.addEventListener('click', () => {
+            if (!lastResults.length) return;
+            const exportData = {
+                exported_at: new Date().toISOString(),
+                query_image: currentFilepath || 'unknown',
+                processing_time: lastMeta.processing_time || null,
+                total_results: lastResults.length,
+                results: lastResults.map((r, i) => ({
+                    rank: i + 1,
+                    image_path: r.image_path,
+                    category: r.image_path.split('/')[0] || '',
+                    hybrid_score: parseFloat((r.similarity_score * 100).toFixed(2)),
+                    feature_similarity: parseFloat((r.feature_similarity * 100).toFixed(2)),
+                    color_similarity: parseFloat((r.color_similarity * 100).toFixed(2)),
+                    texture_similarity: parseFloat((r.texture_similarity * 100).toFixed(2))
+                }))
+            };
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            const url  = URL.createObjectURL(blob);
+            const a    = document.createElement('a');
+            a.href     = url;
+            a.download = `astravision_results_${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            gsap.fromTo(exportBtn, { scale: 0.9 }, { scale: 1, duration: 0.3, ease: 'elastic.out(1.2,0.5)' });
+        });
     }
 
     /* ── XAI Toggle ────────────────────────────────────── */
@@ -509,7 +565,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const key = `${resultPath}-${rating}`;
         if (feedbackState[key]) return;
         feedbackState[key] = true;
-
         const siblingRating = rating === 1 ? -1 : 1;
         feedbackState[`${resultPath}-${siblingRating}`] = false;
 
@@ -632,264 +687,506 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    /* ── Color Palette (browser-side canvas extraction) ── */
+    function extractDominantColors(imgEl, numColors) {
+        try {
+            const canvas = document.createElement('canvas');
+            const SIZE   = 80;
+            canvas.width  = SIZE;
+            canvas.height = SIZE;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(imgEl, 0, 0, SIZE, SIZE);
+            const pixels = ctx.getImageData(0, 0, SIZE, SIZE).data;
+
+            /* Quantize to 5-bit colors and count occurrences */
+            const buckets = {};
+            for (let i = 0; i < pixels.length; i += 4) {
+                const r = pixels[i]   & 0xF8;
+                const g = pixels[i+1] & 0xF8;
+                const b = pixels[i+2] & 0xF8;
+                const a = pixels[i+3];
+                if (a < 128) continue;
+                const key = `${r},${g},${b}`;
+                buckets[key] = (buckets[key] || 0) + 1;
+            }
+
+            /* Pick top N colors, skip near-black and near-white */
+            const sorted = Object.entries(buckets)
+                .sort((a, b) => b[1] - a[1])
+                .filter(([key]) => {
+                    const [r,g,b] = key.split(',').map(Number);
+                    const lum = 0.299*r + 0.587*g + 0.114*b;
+                    return lum > 15 && lum < 240;
+                })
+                .slice(0, numColors * 6);
+
+            /* De-duplicate by min distance */
+            const result = [];
+            for (const [key] of sorted) {
+                const [r,g,b] = key.split(',').map(Number);
+                let tooClose = false;
+                for (const [pr,pg,pb] of result) {
+                    const dist = Math.sqrt((r-pr)**2 + (g-pg)**2 + (b-pb)**2);
+                    if (dist < 40) { tooClose = true; break; }
+                }
+                if (!tooClose) {
+                    result.push([r,g,b]);
+                    if (result.length >= numColors) break;
+                }
+            }
+            return result;
+        } catch (e) {
+            return [];
+        }
+    }
+
+    function colorToHex(r, g, b) {
+        return '#' + [r,g,b].map(v => v.toString(16).padStart(2,'0')).join('');
+    }
+
+    function renderPaletteStrip(colors) {
+        if (!colors || colors.length === 0) return;
+        paletteSatches.innerHTML = '';
+        colors.forEach(([r,g,b]) => {
+            const hex = colorToHex(r,g,b);
+            const swatch = document.createElement('div');
+            swatch.className = 'palette-swatch';
+            swatch.style.background = hex;
+            swatch.title = hex;
+            swatch.addEventListener('click', () => {
+                navigator.clipboard?.writeText(hex).catch(()=>{});
+                swatch.classList.add('copied');
+                setTimeout(() => swatch.classList.remove('copied'), 1000);
+            });
+            paletteSatches.appendChild(swatch);
+        });
+        colorPaletteStrip.classList.remove('hidden');
+        gsap.fromTo('.palette-swatch', { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, stagger: 0.06, ease: 'back.out(1.7)' });
+    }
+
     /* ── History ───────────────────────────────────────── */
     async function loadHistory() {
-        const grid = document.getElementById('history-grid');
+        const grid    = document.getElementById('history-grid');
+        const summary = document.getElementById('history-summary');
         grid.innerHTML = '<div class="history-loading"><div class="spinner"></div></div>';
+        if (summary) summary.classList.add('hidden');
 
         try {
             const res  = await fetch('/api/history');
-            const data = await res.json();
+            if (res.status === 401) {
+                grid.innerHTML = '<div class="history-empty"><i data-lucide="lock"></i><p>Please log in to view history.</p></div>';
+                lucide.createIcons();
+                return;
+            }
+            const data  = await res.json();
             const items = data.history || [];
 
             if (items.length === 0) {
-                grid.innerHTML = '<div class="history-empty">No search history yet. Run a visual search to get started.</div>';
+                grid.innerHTML = '<div class="history-empty"><i data-lucide="clock"></i><p>No search history yet.</p><span>Run a visual search to get started.</span></div>';
+                lucide.createIcons();
                 return;
             }
 
+            /* Summary stats */
+            if (summary) {
+                const totalTime = items.reduce((s, i) => s + (i.processing_time || 0), 0);
+                const avgTime   = (totalTime / items.length).toFixed(2);
+                const totalRes  = items.reduce((s, i) => s + (i.result_count || 0), 0);
+                summary.innerHTML = `
+                    <div class="hsumm-item"><span class="hsumm-val">${items.length}</span><span class="hsumm-label">Searches</span></div>
+                    <div class="hsumm-item"><span class="hsumm-val">${avgTime}s</span><span class="hsumm-label">Avg Time</span></div>
+                    <div class="hsumm-item"><span class="hsumm-val">${totalRes}</span><span class="hsumm-label">Total Results</span></div>`;
+                summary.classList.remove('hidden');
+            }
+
             grid.innerHTML = '';
-            items.forEach(item => {
+            items.forEach((item, idx) => {
                 const card = document.createElement('div');
                 card.className = 'history-card';
-                const ts = new Date(item.timestamp.replace(' ', 'T') + 'Z').toLocaleString();
+
+                /* Parse timestamp robustly */
+                let tsStr = '—';
+                try {
+                    const raw = (item.timestamp || '').replace(' ', 'T');
+                    const dt  = new Date(raw.includes('Z') ? raw : raw + 'Z');
+                    tsStr = isNaN(dt.getTime()) ? item.timestamp : dt.toLocaleString();
+                } catch(e) { tsStr = item.timestamp || '—'; }
+
+                /* Category guess from query_image filename */
+                const fname = item.query_image || 'Unknown image';
+                const scoreBarW = Math.min(100, (item.result_count / 10) * 100);
+
                 card.innerHTML = `
                     <div class="history-card-top">
-                        <div class="history-icon"><i data-lucide="image"></i></div>
-                        <div class="history-filename">${item.query_image}</div>
+                        <div class="history-icon"><i data-lucide="image-search"></i></div>
+                        <div class="history-info">
+                            <div class="history-filename" title="${fname}">${fname}</div>
+                            <div class="history-date">${tsStr}</div>
+                        </div>
                         <button class="history-delete-btn" data-id="${item.id}" title="Delete">
                             <i data-lucide="trash-2"></i>
                         </button>
                     </div>
-                    <div class="history-meta">
-                        <div class="history-meta-item">
-                            <span class="history-meta-label">Results</span>
-                            <span class="history-meta-value">${item.result_count}</span>
+                    <div class="history-metrics">
+                        <div class="hmetric">
+                            <span class="hmetric-val accent">${item.result_count}</span>
+                            <span class="hmetric-label">Results</span>
                         </div>
-                        <div class="history-meta-item">
-                            <span class="history-meta-label">Time</span>
-                            <span class="history-meta-value">${(item.processing_time || 0).toFixed(2)}s</span>
+                        <div class="hmetric">
+                            <span class="hmetric-val">${(item.processing_time || 0).toFixed(2)}s</span>
+                            <span class="hmetric-label">Time</span>
                         </div>
-                        <div class="history-meta-item">
-                            <span class="history-meta-label">Date</span>
-                            <span class="history-meta-value history-date">${ts}</span>
+                        <div class="hmetric">
+                            <span class="hmetric-val">#${idx + 1}</span>
+                            <span class="hmetric-label">Entry</span>
                         </div>
+                    </div>
+                    <div class="history-result-bar">
+                        <div class="history-result-fill" style="width:${scoreBarW}%"></div>
                     </div>`;
+
                 grid.appendChild(card);
             });
 
             lucide.createIcons();
+            gsap.fromTo('.history-card',
+                { y: 24, opacity: 0 },
+                { y: 0, opacity: 1, duration: 0.45, stagger: 0.07, ease: 'power2.out' }
+            );
 
             grid.querySelectorAll('.history-delete-btn').forEach(btn => {
                 btn.addEventListener('click', async e => {
                     e.stopPropagation();
-                    const id = btn.dataset.id;
+                    const id   = btn.dataset.id;
+                    const card = btn.closest('.history-card');
                     try {
-                        await fetch(`/api/history/${id}`, { method: 'DELETE' });
-                        const card = btn.closest('.history-card');
-                        gsap.to(card, { opacity: 0, height: 0, marginBottom: 0, duration: 0.3, onComplete: () => card.remove() });
+                        const r = await fetch(`/api/history/${id}`, { method: 'DELETE' });
+                        if (r.ok) {
+                            gsap.to(card, { opacity: 0, height: 0, marginBottom: 0, padding: 0, duration: 0.35,
+                                onComplete: () => {
+                                    card.remove();
+                                    if (!grid.querySelector('.history-card')) loadHistory();
+                                }
+                            });
+                        }
                     } catch (err) {}
                 });
             });
 
         } catch (e) {
-            grid.innerHTML = '<div class="history-empty">Failed to load history.</div>';
+            grid.innerHTML = '<div class="history-empty"><i data-lucide="wifi-off"></i><p>Failed to load history.</p></div>';
+            lucide.createIcons();
         }
     }
 
-    /* ── 3D Embedding Space ─────────────────────────────── */
-    async function initSpace3D() {
-        const empty   = document.getElementById('space3d-empty');
-        const canvas  = document.getElementById('space3d-canvas');
-        const tooltip = document.getElementById('space3d-tooltip');
+    /* ── Analytics Dashboard ───────────────────────────── */
+    async function initAnalytics() {
+        /* Fetch embeddings data */
+        const hint = document.getElementById('analytics-hint');
 
-        let data;
+        let embData = null;
         try {
             const res = await fetch('/api/embeddings');
-            data = await res.json();
-        } catch (e) { return; }
+            if (res.ok) embData = await res.json();
+        } catch (e) {}
 
-        if (!data.points || data.points.length < 2) {
-            empty.style.display  = 'flex';
-            canvas.style.display = 'none';
+        const hasData = embData && embData.points && embData.points.length > 1;
+
+        if (hint) {
+            hint.style.display = hasData ? 'none' : 'block';
+        }
+
+        /* 2D Scatter Plot */
+        drawScatterPlot(embData);
+
+        /* Session Stats */
+        renderSessionStats();
+
+        /* Category chart from last results */
+        renderCategoryChart(lastResults);
+
+        /* Similarity histogram */
+        renderSimHistogram(lastResults);
+
+        /* Color palette from last query */
+        renderAnalyticsPalette(lastDominantColors);
+    }
+
+    /* ── 2D Canvas Scatter Plot ─────────────────────────── */
+    function drawScatterPlot(data) {
+        const canvas  = document.getElementById('scatter-canvas');
+        const empty   = document.getElementById('scatter-empty');
+        const tooltip = document.getElementById('scatter-tooltip');
+        const wrap    = document.getElementById('scatter-wrap');
+
+        if (!data || !data.points || data.points.length < 2) {
+            if (canvas)  canvas.style.display = 'none';
             if (tooltip) tooltip.style.display = 'none';
+            if (empty)   empty.style.display   = 'flex';
             return;
         }
 
         empty.style.display  = 'none';
         canvas.style.display = 'block';
 
-        /* Dispose any existing renderer before creating a new one */
-        if (threeAnimId)    cancelAnimationFrame(threeAnimId);
-        if (threeRenderer)  { threeRenderer.dispose(); threeRenderer = null; }
+        const W = wrap.clientWidth  || 600;
+        const H = wrap.clientHeight || 380;
+        canvas.width  = W;
+        canvas.height = H;
 
-        /* Use RAF so the browser lays out the now-visible container before we read its size */
-        requestAnimationFrame(() => render3D(canvas, data, tooltip));
-    }
+        const ctx    = canvas.getContext('2d');
+        const points = data.points;
+        const scores = data.scores || [];
 
-    function render3D(canvas, data, tooltip) {
-        const container = document.getElementById('space3d-container');
-        const W = container.clientWidth  || 800;
-        const H = container.clientHeight || 500;
+        /* Use PCA x (index 0) and y (index 1) */
+        const xs = points.map(p => p[0]);
+        const ys = points.map(p => p[1]);
+        const xMin = Math.min(...xs), xMax = Math.max(...xs);
+        const yMin = Math.min(...ys), yMax = Math.max(...ys);
+        const PAD  = 40;
 
-        threeScene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(60, W / H, 0.01, 100);
-        camera.position.set(0, 0, 3);
-
-        threeRenderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-        threeRenderer.setSize(W, H);
-        threeRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-
-        const points     = data.points      || [];
-        const scores     = data.scores      || [];
-        const imagePaths = data.image_paths || [];
-        const scale      = 2;
-
-        /* Central pivot group — all meshes live inside it */
-        const pivot = new THREE.Group();
-        threeScene.add(pivot);
-
-        const allMeshes = [];
-
-        points.forEach((pt, i) => {
-            const isQuery = i === 0;
-            const score   = scores[i] || 0;
-
-            let color;
-            if (isQuery) {
-                color = new THREE.Color(1, 1, 1);
-            } else if (score > 0.7) {
-                color = new THREE.Color(0.06, 0.73, 0.51);   /* green */
-            } else if (score > 0.4) {
-                color = new THREE.Color(0.23, 0.51, 0.96);   /* blue */
-            } else {
-                color = new THREE.Color(0.96, 0.62, 0.04);   /* orange */
-            }
-
-            const size = isQuery ? 0.14 : 0.055 + score * 0.05;
-            const geom = new THREE.SphereGeometry(size, 20, 20);
-            const mat  = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: isQuery ? 1 : 0.85 });
-            const mesh = new THREE.Mesh(geom, mat);
-            mesh.position.set(pt[0] * scale, pt[1] * scale, pt[2] * scale);
-            mesh.userData = { isQuery, score, imagePath: imagePaths[i] || '', index: i };
-            pivot.add(mesh);
-            allMeshes.push(mesh);
-
-            /* Glow halo for query node */
-            if (isQuery) {
-                const glowGeom = new THREE.SphereGeometry(size * 2.8, 20, 20);
-                const glowMat  = new THREE.MeshBasicMaterial({ color: 0x3b82f6, transparent: true, opacity: 0.07 });
-                const glow     = new THREE.Mesh(glowGeom, glowMat);
-                glow.position.copy(mesh.position);
-                pivot.add(glow);
-            }
-        });
-
-        /* ── Drag controls ───────────────────────────── */
-        let isDragging = false;
-        let prevMouse  = { x: 0, y: 0 };
-        let rotX = 0, rotY = 0;
-
-        canvas.addEventListener('mousedown', e => {
-            isDragging = true;
-            prevMouse = { x: e.clientX, y: e.clientY };
-            canvas.style.cursor = 'grabbing';
-        });
-        window.addEventListener('mouseup', () => {
-            isDragging = false;
-            canvas.style.cursor = 'grab';
-        });
-        window.addEventListener('mousemove', e => {
-            if (!isDragging) return;
-            rotY += (e.clientX - prevMouse.x) * 0.005;
-            rotX += (e.clientY - prevMouse.y) * 0.005;
-            prevMouse = { x: e.clientX, y: e.clientY };
-        });
-        canvas.addEventListener('wheel', e => {
-            e.preventDefault();
-            camera.position.z = Math.max(0.5, Math.min(8, camera.position.z + e.deltaY * 0.005));
-        }, { passive: false });
-        canvas.style.cursor = 'grab';
-
-        /* ── Raycasting for hover / click ────────────── */
-        const raycaster   = new THREE.Raycaster();
-        const mouse2D     = new THREE.Vector2();
-        let hoveredMesh   = null;
-
-        canvas.addEventListener('mousemove', e => {
-            if (isDragging) return;
-            const rect = canvas.getBoundingClientRect();
-            mouse2D.x = ((e.clientX - rect.left) / rect.width)  *  2 - 1;
-            mouse2D.y = ((e.clientY - rect.top)  / rect.height) * -2 + 1;
-
-            raycaster.setFromCamera(mouse2D, camera);
-            const hits = raycaster.intersectObjects(allMeshes);
-
-            if (hits.length > 0) {
-                const hit = hits[0].object;
-                if (hit !== hoveredMesh) {
-                    if (hoveredMesh) hoveredMesh.material.opacity = hoveredMesh.userData.isQuery ? 1 : 0.85;
-                    hoveredMesh = hit;
-                    hit.material.opacity = 1;
-                }
-                canvas.style.cursor = 'pointer';
-                if (tooltip) {
-                    const ud = hit.userData;
-                    const label = ud.isQuery
-                        ? '<strong>Query Image</strong>'
-                        : `<strong>Score: ${(ud.score * 100).toFixed(1)}%</strong>`;
-                    const fname = ud.imagePath ? ud.imagePath.split('/').pop() : '';
-                    tooltip.innerHTML  = `${label}${fname ? '<br><span>' + fname + '</span>' : ''}`;
-                    tooltip.style.left = (e.clientX - canvas.getBoundingClientRect().left + 14) + 'px';
-                    tooltip.style.top  = (e.clientY - canvas.getBoundingClientRect().top  - 10) + 'px';
-                    tooltip.style.display = 'block';
-                }
-            } else {
-                if (hoveredMesh) {
-                    hoveredMesh.material.opacity = hoveredMesh.userData.isQuery ? 1 : 0.85;
-                    hoveredMesh = null;
-                }
-                canvas.style.cursor = 'grab';
-                if (tooltip) tooltip.style.display = 'none';
-            }
-        });
-
-        canvas.addEventListener('click', () => {
-            if (!hoveredMesh) return;
-            const ud = hoveredMesh.userData;
-            if (!ud.isQuery && ud.imagePath && lastResults.length > 0) {
-                const match = lastResults.find(r => r.image_path === ud.imagePath);
-                if (match) openCompareModal(match);
-            }
-        });
-
-        /* ── Animation loop ──────────────────────────── */
-        function loop() {
-            threeAnimId = requestAnimationFrame(loop);
-            if (!isDragging) rotY += 0.004;
-            pivot.rotation.y = rotY;
-            pivot.rotation.x = rotX;
-            threeRenderer.render(threeScene, camera);
+        function toCanvas(px, py) {
+            return {
+                cx: PAD + ((px - xMin) / (xMax - xMin || 1)) * (W - 2 * PAD),
+                cy: H - PAD - ((py - yMin) / (yMax - yMin || 1)) * (H - 2 * PAD)
+            };
         }
-        loop();
 
-        /* ── Responsive resize ───────────────────────── */
-        const ro = new ResizeObserver(() => {
-            const nW = container.clientWidth;
-            const nH = container.clientHeight;
-            if (nW && nH) {
-                camera.aspect = nW / nH;
-                camera.updateProjectionMatrix();
-                threeRenderer.setSize(nW, nH);
+        /* Draw grid lines */
+        ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+        ctx.lineWidth   = 1;
+        for (let i = 1; i < 4; i++) {
+            const gx = PAD + (i / 4) * (W - 2 * PAD);
+            const gy = PAD + (i / 4) * (H - 2 * PAD);
+            ctx.beginPath(); ctx.moveTo(gx, PAD); ctx.lineTo(gx, H - PAD); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(PAD, gy); ctx.lineTo(W - PAD, gy); ctx.stroke();
+        }
+
+        /* Draw connection lines from query to results */
+        const q = toCanvas(xs[0], ys[0]);
+        for (let i = 1; i < points.length; i++) {
+            const s  = scores[i] || 0;
+            const pt = toCanvas(xs[i], ys[i]);
+            ctx.beginPath();
+            ctx.moveTo(q.cx, q.cy);
+            ctx.lineTo(pt.cx, pt.cy);
+            ctx.strokeStyle = `rgba(59,130,246,${0.05 + s * 0.15})`;
+            ctx.lineWidth   = 0.8;
+            ctx.stroke();
+        }
+
+        /* Store node data for hover */
+        const nodes = [];
+
+        /* Draw result nodes */
+        for (let i = 1; i < points.length; i++) {
+            const s   = scores[i] || 0;
+            const pt  = toCanvas(xs[i], ys[i]);
+            const r   = 5 + s * 4;
+            let color;
+            if (s > 0.7)      color = '#10b981';
+            else if (s > 0.4) color = '#3b82f6';
+            else              color = '#f59e0b';
+
+            ctx.beginPath();
+            ctx.arc(pt.cx, pt.cy, r, 0, Math.PI * 2);
+            ctx.fillStyle   = color + 'cc';
+            ctx.fill();
+            ctx.strokeStyle = color;
+            ctx.lineWidth   = 1.5;
+            ctx.stroke();
+
+            nodes.push({ cx: pt.cx, cy: pt.cy, r, score: s,
+                         imgPath: (data.image_paths || [])[i] || '', isQuery: false });
+        }
+
+        /* Draw query node on top */
+        ctx.beginPath();
+        ctx.arc(q.cx, q.cy, 11, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+        /* Glow ring */
+        const grd = ctx.createRadialGradient(q.cx, q.cy, 8, q.cx, q.cy, 22);
+        grd.addColorStop(0, 'rgba(59,130,246,0.4)');
+        grd.addColorStop(1, 'rgba(59,130,246,0)');
+        ctx.beginPath();
+        ctx.arc(q.cx, q.cy, 22, 0, Math.PI * 2);
+        ctx.fillStyle = grd;
+        ctx.fill();
+
+        nodes.unshift({ cx: q.cx, cy: q.cy, r: 11, score: 1, imgPath: '', isQuery: true });
+
+        /* Hover interaction */
+        canvas.onmousemove = e => {
+            const rect = canvas.getBoundingClientRect();
+            const mx   = e.clientX - rect.left;
+            const my   = e.clientY - rect.top;
+            let hit = null;
+            for (const nd of nodes) {
+                if (Math.sqrt((mx - nd.cx)**2 + (my - nd.cy)**2) <= nd.r + 5) { hit = nd; break; }
             }
-        });
-        ro.observe(container);
+            if (hit) {
+                canvas.style.cursor = 'pointer';
+                const fname = hit.imagePath ? hit.imagePath.split('/').pop() : '';
+                tooltip.innerHTML  = hit.isQuery
+                    ? '<strong>Query Image</strong>'
+                    : `<strong>${(hit.score*100).toFixed(1)}% match</strong>${fname ? '<br><span>'+fname+'</span>' : ''}`;
+                tooltip.style.left    = (mx + 14) + 'px';
+                tooltip.style.top     = (my - 10) + 'px';
+                tooltip.style.display = 'block';
+            } else {
+                canvas.style.cursor   = 'default';
+                tooltip.style.display = 'none';
+            }
+        };
+        canvas.onmouseleave = () => { tooltip.style.display = 'none'; };
     }
 
-    /* ── Window resize — redraw bounding boxes ──────────── */
+    /* ── Session Statistics ─────────────────────────────── */
+    async function renderSessionStats() {
+        try {
+            const res  = await fetch('/api/stats');
+            if (!res.ok) return;
+            const data = await res.json();
+            const el   = id => document.getElementById(id);
+            if (el('stat-total'))   el('stat-total').textContent   = data.total_searches ?? '—';
+            if (el('stat-avgtime')) el('stat-avgtime').textContent = data.avg_time ? data.avg_time + 's' : '—';
+            if (el('stat-topscore')) el('stat-topscore').textContent = lastResults.length
+                ? (lastResults[0].similarity_score * 100).toFixed(1) + '%' : '—';
+            if (el('stat-results')) el('stat-results').textContent = lastResults.length || '—';
+        } catch (e) {}
+    }
+
+    /* ── Category Chart ─────────────────────────────────── */
+    function renderCategoryChart(results) {
+        const container = document.getElementById('category-chart');
+        const badge     = document.getElementById('cat-total-badge');
+        if (!container) return;
+
+        if (!results || results.length === 0) {
+            container.innerHTML = '<p class="cat-empty">Run a search to see category breakdown</p>';
+            if (badge) badge.textContent = '';
+            return;
+        }
+
+        const counts = {};
+        results.forEach(r => {
+            const cat = (r.image_path || '').split('/')[0] || 'Unknown';
+            counts[cat] = (counts[cat] || 0) + 1;
+        });
+
+        const sorted  = Object.entries(counts).sort((a,b) => b[1] - a[1]);
+        const maxCount = sorted[0][1];
+        if (badge) badge.textContent = `${sorted.length} categories`;
+
+        const COLORS = ['#3b82f6','#10b981','#f59e0b','#8b5cf6','#ef4444','#06b6d4','#f97316','#84cc16'];
+
+        container.innerHTML = '';
+        sorted.forEach(([cat, cnt], i) => {
+            const pct = Math.round((cnt / maxCount) * 100);
+            const row = document.createElement('div');
+            row.className = 'cat-row';
+            row.innerHTML = `
+                <div class="cat-label">${cat}</div>
+                <div class="cat-bar-wrap">
+                    <div class="cat-bar-fill" style="width:0%;background:${COLORS[i % COLORS.length]}" data-width="${pct}%"></div>
+                </div>
+                <div class="cat-count">${cnt}</div>`;
+            container.appendChild(row);
+        });
+
+        /* Animate bars */
+        requestAnimationFrame(() => {
+            container.querySelectorAll('.cat-bar-fill').forEach(bar => {
+                bar.style.width = bar.dataset.width;
+            });
+        });
+    }
+
+    /* ── Similarity Histogram ───────────────────────────── */
+    function renderSimHistogram(results) {
+        const container = document.getElementById('sim-histogram');
+        const badge     = document.getElementById('sim-panel-badge');
+        if (!container) return;
+
+        if (!results || results.length === 0) {
+            container.innerHTML = '<p class="cat-empty">Run a search to see score distribution</p>';
+            if (badge) badge.textContent = '';
+            return;
+        }
+
+        /* Bucket scores into 5 bands */
+        const bands = [
+            { label: '80–100%', min: 0.8, max: 1.01, color: '#10b981' },
+            { label: '60–80%',  min: 0.6, max: 0.8,  color: '#3b82f6' },
+            { label: '40–60%',  min: 0.4, max: 0.6,  color: '#8b5cf6' },
+            { label: '20–40%',  min: 0.2, max: 0.4,  color: '#f59e0b' },
+            { label: '0–20%',   min: 0,   max: 0.2,  color: '#ef4444' }
+        ];
+
+        bands.forEach(b => { b.count = results.filter(r => r.similarity_score >= b.min && r.similarity_score < b.max).length; });
+        const maxCnt = Math.max(...bands.map(b => b.count), 1);
+        if (badge) badge.textContent = `${results.length} matches`;
+
+        container.innerHTML = '';
+        bands.forEach(b => {
+            const pct = Math.round((b.count / maxCnt) * 100);
+            const row = document.createElement('div');
+            row.className = 'cat-row';
+            row.innerHTML = `
+                <div class="cat-label">${b.label}</div>
+                <div class="cat-bar-wrap">
+                    <div class="cat-bar-fill" style="width:0%;background:${b.color}" data-width="${pct}%"></div>
+                </div>
+                <div class="cat-count">${b.count}</div>`;
+            container.appendChild(row);
+        });
+
+        requestAnimationFrame(() => {
+            container.querySelectorAll('.cat-bar-fill').forEach(bar => {
+                bar.style.width = bar.dataset.width;
+            });
+        });
+    }
+
+    /* ── Analytics Palette ──────────────────────────────── */
+    function renderAnalyticsPalette(colors) {
+        const el = document.getElementById('analytics-palette');
+        if (!el) return;
+
+        if (!colors || colors.length === 0) {
+            el.innerHTML = '<p class="palette-empty">Upload an image to extract color palette</p>';
+            return;
+        }
+
+        el.innerHTML = '';
+        colors.forEach(([r,g,b]) => {
+            const hex    = colorToHex(r,g,b);
+            const lum    = 0.299*r + 0.587*g + 0.114*b;
+            const txtCol = lum < 128 ? '#ffffff' : '#000000';
+            const chip   = document.createElement('div');
+            chip.className   = 'aplt-chip';
+            chip.style.background = hex;
+            chip.style.color      = txtCol;
+            chip.innerHTML   = `<span>${hex}</span>`;
+            chip.title       = hex;
+            chip.addEventListener('click', () => {
+                navigator.clipboard?.writeText(hex).catch(()=>{});
+                chip.classList.add('copied');
+                setTimeout(() => chip.classList.remove('copied'), 1000);
+            });
+            el.appendChild(chip);
+        });
+    }
+
+    /* ── Window resize ──────────────────────────────────── */
     window.addEventListener('resize', () => {
         if (lastDetections.length > 0 && queryPreview.complete) {
             drawBoundingBoxes(lastDetections, activeClassFilter);
         }
     });
+
+    /* helper */
+    function id(s) { return document.getElementById(s); }
 
 });

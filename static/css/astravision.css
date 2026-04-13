@@ -871,3 +871,488 @@
     border-radius: 12px;
     overflow: hidden;
 }
+
+/* ======================================================
+   CSS STAR BACKGROUND (replaces Three.js WebGL renderer)
+   ====================================================== */
+#star-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background: radial-gradient(ellipse at 20% 50%, rgba(11,19,43,0.9) 0%, #050c19 70%);
+    overflow: hidden;
+    pointer-events: none;
+}
+.stars {
+    position: absolute;
+    inset: -100px;
+    border-radius: 50%;
+}
+/* Generate stars via box-shadow using repeating patterns */
+.stars.s1 {
+    width: 1px; height: 1px;
+    box-shadow:
+        120px 340px #fff, 450px 90px #fff, 800px 210px #fff, 250px 480px #fff,
+        670px 370px #fff, 950px 130px #fff, 300px 600px #fff, 750px 500px #fff,
+        100px 150px #fff, 500px 700px #fff, 900px 420px #fff, 60px 800px #fff,
+        1100px 280px #fff, 1300px 60px #fff, 1200px 520px #fff, 350px 180px #fff,
+        700px 80px #fff, 820px 660px #fff, 1050px 390px #fff, 180px 720px #fff;
+    animation: starFloat 80s linear infinite;
+    opacity: 0.5;
+}
+.stars.s2 {
+    width: 1.5px; height: 1.5px;
+    box-shadow:
+        220px 140px rgba(147,197,253,0.8), 580px 310px rgba(147,197,253,0.8),
+        890px 550px rgba(147,197,253,0.8), 140px 430px rgba(147,197,253,0.8),
+        760px 200px rgba(147,197,253,0.8), 1020px 650px rgba(147,197,253,0.8),
+        430px 720px rgba(147,197,253,0.8), 650px 450px rgba(147,197,253,0.8),
+        980px 320px rgba(147,197,253,0.8), 310px 560px rgba(147,197,253,0.8);
+    animation: starFloat 120s linear infinite reverse;
+    opacity: 0.6;
+}
+.stars.s3 {
+    width: 2px; height: 2px;
+    box-shadow:
+        380px 250px rgba(196,181,253,0.7), 720px 450px rgba(196,181,253,0.7),
+        1150px 180px rgba(196,181,253,0.7), 480px 620px rgba(196,181,253,0.7),
+        830px 350px rgba(196,181,253,0.7), 190px 510px rgba(196,181,253,0.7);
+    animation: starFloat 60s linear infinite;
+    opacity: 0.4;
+}
+@keyframes starFloat {
+    from { transform: translateY(0) rotate(0deg); }
+    to   { transform: translateY(-120px) rotate(1deg); }
+}
+
+/* ======================================================
+   SORT / EXPORT CONTROLS
+   ====================================================== */
+.sort-select {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 10px;
+    color: #e2e8f0;
+    padding: 0.45rem 0.9rem;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.82rem;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.2s, background 0.2s;
+}
+.sort-select:hover, .sort-select:focus {
+    border-color: rgba(59,130,246,0.5);
+    background: rgba(59,130,246,0.08);
+}
+.sort-select option { background: #0f172a; color: #e2e8f0; }
+
+.export-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: rgba(16,185,129,0.12);
+    border: 1px solid rgba(16,185,129,0.3);
+    border-radius: 10px;
+    color: #6ee7b7;
+    padding: 0.45rem 0.9rem;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.export-btn:hover {
+    background: rgba(16,185,129,0.2);
+    border-color: #10b981;
+    color: #fff;
+    transform: translateY(-1px);
+}
+.export-btn svg { width: 14px; height: 14px; }
+
+/* ======================================================
+   COLOR PALETTE STRIP (under query preview)
+   ====================================================== */
+.color-palette-strip {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 1rem;
+    padding: 0.75rem 1rem;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 12px;
+}
+.palette-label {
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.4);
+    white-space: nowrap;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+.palette-swatches {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+}
+.palette-swatch {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: 2px solid rgba(255,255,255,0.1);
+    cursor: pointer;
+    transition: transform 0.2s, border-color 0.2s;
+    position: relative;
+}
+.palette-swatch:hover {
+    transform: scale(1.15);
+    border-color: rgba(255,255,255,0.4);
+}
+.palette-swatch.copied::after {
+    content: '✓';
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    color: #fff;
+    background: rgba(0,0,0,0.5);
+    border-radius: 6px;
+}
+
+/* ======================================================
+   ANALYTICS DASHBOARD
+   ====================================================== */
+.analytics-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+.analytics-header h2 {
+    font-size: 1.8rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+}
+.analytics-header p {
+    color: rgba(255,255,255,0.5);
+    font-size: 0.9rem;
+    margin-bottom: 0.25rem;
+}
+.analytics-hint {
+    color: rgba(59,130,246,0.7) !important;
+    font-size: 0.85rem !important;
+}
+
+.analytics-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    margin-bottom: 1.25rem;
+}
+@media (max-width: 860px) {
+    .analytics-row { grid-template-columns: 1fr; }
+}
+
+.analytics-panel {
+    background: rgba(15,23,42,0.7);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 20px;
+    padding: 1.5rem;
+    backdrop-filter: blur(10px);
+}
+
+.panel-header {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 1.25rem;
+}
+.panel-header svg {
+    width: 18px;
+    height: 18px;
+    color: #3b82f6;
+    flex-shrink: 0;
+}
+.panel-header h4 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #e2e8f0;
+    flex: 1;
+}
+.panel-badge {
+    font-size: 0.7rem;
+    background: rgba(59,130,246,0.15);
+    border: 1px solid rgba(59,130,246,0.3);
+    color: #93c5fd;
+    border-radius: 20px;
+    padding: 0.15rem 0.55rem;
+}
+
+/* Scatter plot */
+.scatter-wrap {
+    position: relative;
+    width: 100%;
+    height: 300px;
+    border-radius: 12px;
+    overflow: hidden;
+    background: rgba(5,12,25,0.6);
+    border: 1px solid rgba(255,255,255,0.05);
+}
+#scatter-canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+.scatter-empty {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    color: rgba(255,255,255,0.2);
+    font-size: 0.85rem;
+}
+.scatter-empty svg { width: 36px; height: 36px; }
+.scatter-tooltip {
+    position: absolute;
+    display: none;
+    background: rgba(15,23,42,0.95);
+    border: 1px solid rgba(59,130,246,0.4);
+    border-radius: 8px;
+    padding: 0.45rem 0.7rem;
+    font-size: 0.78rem;
+    color: #e2e8f0;
+    pointer-events: none;
+    z-index: 10;
+    white-space: nowrap;
+}
+.scatter-tooltip span { color: rgba(255,255,255,0.5); }
+.scatter-legend {
+    display: flex;
+    gap: 1.25rem;
+    margin-top: 0.75rem;
+    flex-wrap: wrap;
+}
+.sleg {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.5);
+}
+.sleg-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.sleg-dot.query { background: #ffffff; box-shadow: 0 0 6px white; }
+.sleg-dot.high  { background: #10b981; }
+.sleg-dot.mid   { background: #3b82f6; }
+.sleg-dot.low   { background: #f59e0b; }
+
+/* Session stats tiles */
+.session-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.85rem;
+    margin-bottom: 1.5rem;
+}
+.stat-tile {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 12px;
+    padding: 0.9rem;
+    text-align: center;
+}
+.stat-tile-value {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: #3b82f6;
+    margin-bottom: 0.25rem;
+}
+.stat-tile-label {
+    font-size: 0.72rem;
+    color: rgba(255,255,255,0.4);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Analytics palette chips */
+.analytics-palette {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+.analytics-palette .palette-empty {
+    font-size: 0.82rem;
+    color: rgba(255,255,255,0.3);
+    font-style: italic;
+}
+.aplt-chip {
+    padding: 0.5rem 0.9rem;
+    border-radius: 10px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.1);
+    transition: transform 0.2s, border-color 0.2s;
+    position: relative;
+}
+.aplt-chip:hover {
+    transform: scale(1.06);
+    border-color: rgba(255,255,255,0.35);
+}
+.aplt-chip.copied::after {
+    content: 'Copied!';
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.72rem;
+    background: rgba(0,0,0,0.55);
+    border-radius: 8px;
+}
+
+/* Category / histogram chart rows */
+.category-panel, .sim-panel {
+    margin-bottom: 1.25rem;
+}
+.category-chart, .sim-histogram {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+.cat-empty {
+    font-size: 0.85rem;
+    color: rgba(255,255,255,0.3);
+    font-style: italic;
+    text-align: center;
+    padding: 1rem 0;
+}
+.cat-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+.cat-label {
+    font-size: 0.78rem;
+    color: rgba(255,255,255,0.65);
+    width: 100px;
+    flex-shrink: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.cat-bar-wrap {
+    flex: 1;
+    height: 14px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 7px;
+    overflow: hidden;
+}
+.cat-bar-fill {
+    height: 100%;
+    border-radius: 7px;
+    transition: width 0.7s cubic-bezier(0.22,1,0.36,1);
+}
+.cat-count {
+    font-size: 0.78rem;
+    color: rgba(255,255,255,0.45);
+    width: 24px;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+/* ======================================================
+   HISTORY — improved cards & summary
+   ====================================================== */
+.history-summary {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin-top: 1rem;
+    padding: 0.9rem 1.5rem;
+    background: rgba(59,130,246,0.06);
+    border: 1px solid rgba(59,130,246,0.15);
+    border-radius: 14px;
+    max-width: 480px;
+    margin-left: auto;
+    margin-right: auto;
+}
+.hsumm-item { text-align: center; }
+.hsumm-val {
+    display: block;
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #60a5fa;
+}
+.hsumm-label {
+    font-size: 0.72rem;
+    color: rgba(255,255,255,0.4);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.history-info {
+    flex: 1;
+    min-width: 0;
+}
+.history-date {
+    font-size: 0.73rem;
+    color: rgba(255,255,255,0.35);
+    margin-top: 0.15rem;
+}
+.history-metrics {
+    display: flex;
+    gap: 0;
+    margin-top: 1rem;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    padding-top: 0.9rem;
+}
+.hmetric {
+    flex: 1;
+    text-align: center;
+    border-right: 1px solid rgba(255,255,255,0.06);
+}
+.hmetric:last-child { border-right: none; }
+.hmetric-val {
+    display: block;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: rgba(255,255,255,0.85);
+}
+.hmetric-val.accent { color: #60a5fa; }
+.hmetric-label {
+    font-size: 0.7rem;
+    color: rgba(255,255,255,0.35);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.history-result-bar {
+    height: 3px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 2px;
+    margin-top: 1rem;
+    overflow: hidden;
+}
+.history-result-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6, #10b981);
+    border-radius: 2px;
+    transition: width 0.6s ease;
+}
+.history-empty {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 3rem;
+    color: rgba(255,255,255,0.3);
+    font-size: 0.9rem;
+}
+.history-empty svg { width: 40px; height: 40px; opacity: 0.4; }
+.history-empty p { font-size: 0.95rem; font-weight: 600; color: rgba(255,255,255,0.45); }
+.history-empty span { font-size: 0.82rem; }
