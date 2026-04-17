@@ -818,7 +818,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 card.innerHTML = `
                     <div class="history-card-top">
-                        <div class="history-icon"><i data-lucide="image-search"></i></div>
+                        <div class="history-icon"><i data-lucide="image"></i></div>
                         <div class="history-info">
                             <div class="history-filename" title="${fname}">${fname}</div>
                             <div class="history-date">${tsStr}</div>

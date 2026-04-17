@@ -160,7 +160,7 @@ function initShufflingCards() {
                         }
                     }
                 });
-            } else if (Draggable.get(card)) {
+            } else if (typeof Draggable !== 'undefined' && Draggable.get(card)) {
                 Draggable.get(card).disable();
             }
         });
