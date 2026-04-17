@@ -330,67 +330,69 @@
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <style>
+        /* CSS wireframe globe replacing Three.js */
+        #canvas-container { display:flex; align-items:center; justify-content:center; }
+        .css-globe {
+            width: 320px; height: 320px;
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.12);
+            box-shadow: 0 0 60px rgba(14,165,233,0.15), inset 0 0 60px rgba(14,165,233,0.05);
+            position: relative;
+            animation: globeSpin 12s linear infinite;
+        }
+        .css-globe::before {
+            content:''; position:absolute; inset:-1px;
+            border-radius:50%;
+            border: 1px solid rgba(255,255,255,0.06);
+            transform: rotateX(75deg);
+        }
+        .css-globe::after {
+            content:''; position:absolute; inset:-1px;
+            border-radius:50%;
+            border: 1px solid rgba(255,255,255,0.06);
+            transform: rotateY(60deg);
+        }
+        .globe-ring {
+            position:absolute; inset:0; border-radius:50%;
+            border:1px solid rgba(255,255,255,0.05);
+        }
+        .globe-ring:nth-child(1){ transform:rotateX(20deg); }
+        .globe-ring:nth-child(2){ transform:rotateX(40deg); }
+        .globe-ring:nth-child(3){ transform:rotateX(60deg); }
+        .globe-ring:nth-child(4){ transform:rotateX(80deg); }
+        .globe-ring:nth-child(5){ transform:rotateY(30deg); }
+        .globe-ring:nth-child(6){ transform:rotateY(60deg); }
+        .globe-ring:nth-child(7){ transform:rotateY(90deg); }
+        .globe-dot {
+            position:absolute; width:4px; height:4px; border-radius:50%;
+            background:rgba(14,165,233,0.7); box-shadow:0 0 6px rgba(14,165,233,0.8);
+        }
+        @keyframes globeSpin { from{transform:rotateY(0deg) rotateX(15deg)} to{transform:rotateY(360deg) rotateX(15deg)} }
+    </style>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
 
-            // Setup Exact Three.js Globe Animation matched to React component
+            /* CSS Globe replacing Three.js */
             const container = document.getElementById('canvas-container');
-            const scene = new THREE.Scene();
-
-            // PerspectiveCamera position=[0, 0, 3] fov=75
-            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.z = 3;
-
-            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(window.devicePixelRatio);
-            container.appendChild(renderer.domElement);
-
-            // Ambient light & Point light
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-            scene.add(ambientLight);
-
-            const pointLight = new THREE.PointLight(0xffffff, 1);
-            pointLight.position.set(10, 10, 10);
-            scene.add(pointLight);
-
-            // React component arguments: radius={1}, 64, 64 segments
-            const globeRadius = 1;
-            const globeGeo = new THREE.SphereGeometry(globeRadius, 64, 64);
-            const globeMat = new THREE.MeshBasicMaterial({
-                color: 0xf8fafc, // hsl(var(--foreground))
-                transparent: true,
-                opacity: 0.15,
-                wireframe: true
-            });
-            const globe = new THREE.Mesh(globeGeo, globeMat);
-
-            const group = new THREE.Group();
-            group.add(globe);
-            scene.add(group);
-
-            const rotationSpeed = 0.004;
-
-            function animate() {
-                requestAnimationFrame(animate);
-
-                // Exact React Frame calculations
-                group.rotation.y += rotationSpeed;
-                group.rotation.x += rotationSpeed * 0.3;
-                group.rotation.z += rotationSpeed * 0.1;
-
-                renderer.render(scene, camera);
+            const globe = document.createElement('div');
+            globe.className = 'css-globe';
+            for (let i = 0; i < 7; i++) {
+                const ring = document.createElement('div');
+                ring.className = 'globe-ring';
+                globe.appendChild(ring);
             }
-            animate();
-
-            window.addEventListener('resize', () => {
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
+            /* Add glowing dots at strategic positions */
+            [[20,30],[60,70],[45,15],[80,55],[10,80],[70,40],[35,65]].forEach(([t,l]) => {
+                const dot = document.createElement('div');
+                dot.className = 'globe-dot';
+                dot.style.top = t + '%';
+                dot.style.left = l + '%';
+                globe.appendChild(dot);
             });
+            container.appendChild(globe);
 
             // Replicate Framer Motion animations with GSAP
             const tl = gsap.timeline();

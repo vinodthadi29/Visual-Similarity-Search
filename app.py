@@ -441,6 +441,30 @@ def history():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route('/api/stats')
+def get_stats():
+    if 'user' not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+    username = session.get('user')
+    try:
+        conn = get_db_connection()
+        row = conn.execute(
+            '''SELECT COUNT(*) as total_searches,
+                      ROUND(AVG(processing_time), 2) as avg_time,
+                      SUM(result_count) as total_results
+               FROM search_history WHERE username = ?''',
+            (username,)
+        ).fetchone()
+        conn.close()
+        return jsonify({
+            'total_searches': row['total_searches'] or 0,
+            'avg_time':       str(row['avg_time'] or 0),
+            'total_results':  row['total_results'] or 0
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route('/api/history/<int:item_id>', methods=['DELETE'])
 def delete_history_item(item_id):
     if 'user' not in session:

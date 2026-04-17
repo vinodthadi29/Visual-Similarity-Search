@@ -96,29 +96,7 @@
     </div>
 
     <!-- Removed GSAP and Carousel JS for static layout -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-        // Simple starfield background
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.getElementById('three-bg').appendChild(renderer.domElement);
-
-        const starsGeom = new THREE.BufferGeometry();
-        const posArray = new Float32Array(2000 * 3);
-        for (let i = 0; i < 2000 * 3; i++) posArray[i] = (Math.random() - 0.5) * 50;
-        starsGeom.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-        const starsMesh = new THREE.Points(starsGeom, new THREE.PointsMaterial({ size: 0.03, color: 0x3b82f6, transparent: true, opacity: 0.5 }));
-        scene.add(starsMesh);
-        camera.position.z = 15;
-
-        function animate() {
-            requestAnimationFrame(animate);
-            starsMesh.rotation.y += 0.0005;
-            renderer.render(scene, camera);
-        }
-        animate();
         lucide.createIcons();
     </script>
 </body>

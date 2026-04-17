@@ -31,7 +31,10 @@ class AstraGuardian {
             celebrationPhase: 0
         };
 
+        this.webglFailed = false;
         this.initScene();
+        if (this.webglFailed) return;
+
         this.initLighting();
         this.createCharacter();
         this.animate();
@@ -42,16 +45,41 @@ class AstraGuardian {
     initScene() {
         const W = this.container.clientWidth;
         const H = this.container.clientHeight;
-        this.scene = new THREE.Scene();
-        this.camera = new THREE.PerspectiveCamera(40, W / H, 0.1, 100);
-        this.camera.position.set(0, 0.2, 7);
 
-        this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-        this.renderer.setSize(W, H);
-        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        this.renderer.shadowMap.enabled = true;
-        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        this.container.appendChild(this.renderer.domElement);
+        /* Check WebGL availability before trying to create renderer */
+        const testCanvas = document.createElement('canvas');
+        const gl = testCanvas.getContext('webgl') || testCanvas.getContext('experimental-webgl');
+        if (!gl) {
+            this.webglFailed = true;
+            this._showCSSFallback();
+            return;
+        }
+
+        try {
+            this.scene = new THREE.Scene();
+            this.camera = new THREE.PerspectiveCamera(40, W / H, 0.1, 100);
+            this.camera.position.set(0, 0.2, 7);
+
+            this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            this.renderer.setSize(W, H);
+            this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            this.renderer.shadowMap.enabled = true;
+            this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            this.container.appendChild(this.renderer.domElement);
+        } catch (e) {
+            this.webglFailed = true;
+            this._showCSSFallback();
+        }
+    }
+
+    _showCSSFallback() {
+        this.container.innerHTML = `
+            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:1rem;">
+                <div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#8b5cf6);
+                     animation:guardianPulse 2s ease-in-out infinite;box-shadow:0 0 30px rgba(59,130,246,0.4);"></div>
+                <div style="font-size:0.75rem;color:rgba(255,255,255,0.35);letter-spacing:0.1em;text-transform:uppercase;">AstraGuardian</div>
+            </div>
+            <style>@keyframes guardianPulse{0%,100%{transform:scale(1);opacity:0.85}50%{transform:scale(1.12);opacity:1}}</style>`;
     }
 
     initLighting() {
