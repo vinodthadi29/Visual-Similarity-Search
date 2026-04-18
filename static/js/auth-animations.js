@@ -28,14 +28,16 @@ function animateWarningGraphic(containerId) {
         ease: "power1.inOut"
     });
 
-    // 2. Triangle outline draws
+    // 2. Triangle outline draws using strokeDashoffset
+    if (triangle) {
+        const len = triangle.getTotalLength ? triangle.getTotalLength() : 300;
+        gsap.set(triangle, { strokeDasharray: len, strokeDashoffset: len, opacity: 1 });
+    }
     tl.to(triangle, {
+        strokeDashoffset: 0,
         opacity: 1,
-        duration: 0.8,
-        onStart: () => {
-            // Basic SVG path drawing simulation if not a complex path
-            gsap.fromTo(triangle, { drawSVG: "0%" }, { drawSVG: "100%", duration: 0.8 });
-        }
+        duration: 0.9,
+        ease: "power1.inOut"
     }, 0.6);
 
     // 3. Interior stripes animate from center

@@ -61,6 +61,40 @@
         <!-- === SEARCH VIEW === -->
         <div id="view-search" class="view active">
 
+            <!-- Pre-search Options Bar -->
+            <div class="pre-search-bar">
+                <div class="pre-search-option">
+                    <div class="pso-toggle-group">
+                        <div class="toggle-container">
+                            <i data-lucide="flame" class="pso-icon"></i>
+                            <span class="toggle-label">Grad-CAM XAI</span>
+                            <label class="premium-switch">
+                                <input type="checkbox" id="xai-toggle-pre">
+                                <span class="switch-slider"></span>
+                            </label>
+                        </div>
+                        <span class="pso-hint">Visualize neural attention heatmaps on results</span>
+                    </div>
+                </div>
+                <div class="pre-search-option">
+                    <div class="pso-toggle-group">
+                        <div class="toggle-container">
+                            <i data-lucide="cpu" class="pso-icon"></i>
+                            <span class="toggle-label">Deep Object Scan</span>
+                            <label class="premium-switch">
+                                <input type="checkbox" id="yolo-pre-toggle">
+                                <span class="switch-slider"></span>
+                            </label>
+                        </div>
+                        <span class="pso-hint">YOLOv8 region-of-interest search</span>
+                    </div>
+                </div>
+                <div class="pre-search-stats">
+                    <span class="pso-stat"><i data-lucide="database"></i> 9,144 images indexed</span>
+                    <span class="pso-stat"><i data-lucide="zap"></i> MobileNetV2 + FAISS</span>
+                </div>
+            </div>
+
             <!-- Upload Zone -->
             <section class="card upload-card" id="drop-area">
                 <label for="fileElem" class="custum-file-upload">
@@ -284,10 +318,15 @@
     <div class="modal-overlay hidden" id="compare-modal">
         <div class="modal-panel">
             <div class="modal-header">
-                <h3>Visual Comparison</h3>
-                <button class="modal-close" id="modal-close">
-                    <i data-lucide="x"></i>
-                </button>
+                <h3><i data-lucide="columns-2"></i> Visual Comparison</h3>
+                <div class="modal-header-actions">
+                    <button class="modal-action-btn" id="modal-download-btn" title="Download result image">
+                        <i data-lucide="download"></i>
+                    </button>
+                    <button class="modal-close" id="modal-close" title="Close (Esc)">
+                        <i data-lucide="x"></i>
+                    </button>
+                </div>
             </div>
             <div class="compare-wrapper" id="compare-wrapper">
                 <div class="compare-before">
@@ -301,6 +340,29 @@
                 <div class="compare-divider" id="compare-divider"></div>
                 <input type="range" class="compare-slider" id="compare-slider" min="0" max="100" value="50">
             </div>
+
+            <!-- Grad-CAM Heatmap Panel -->
+            <div class="gradcam-panel" id="gradcam-panel">
+                <div class="gradcam-header">
+                    <i data-lucide="flame"></i>
+                    <span>Grad-CAM Neural Attention</span>
+                    <span class="gradcam-badge">XAI</span>
+                    <div class="gradcam-spinner" id="gradcam-spinner"></div>
+                </div>
+                <div class="gradcam-content" id="gradcam-content">
+                    <div class="gradcam-placeholder" id="gradcam-placeholder">
+                        <i data-lucide="cpu"></i>
+                        <span>Generating attention map...</span>
+                    </div>
+                    <img id="gradcam-img" src="" alt="Grad-CAM Heatmap" class="gradcam-result-img" style="display:none">
+                    <div class="gradcam-legend">
+                        <span class="gl-item high">High attention</span>
+                        <span class="gl-item mid">Medium</span>
+                        <span class="gl-item low">Low</span>
+                    </div>
+                </div>
+            </div>
+
             <div class="similarity-breakdown" id="similarity-breakdown">
                 <h4>Similarity Breakdown</h4>
                 <div class="breakdown-bars" id="breakdown-bars"></div>

@@ -1438,3 +1438,229 @@
 .history-empty svg { width: 40px; height: 40px; opacity: 0.4; }
 .history-empty p { font-size: 0.95rem; font-weight: 600; color: rgba(255,255,255,0.45); }
 .history-empty span { font-size: 0.82rem; }
+
+/* ======================================================
+   PRE-SEARCH OPTIONS BAR
+   ====================================================== */
+.pre-search-bar {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    background: rgba(15,23,42,0.8);
+    border: 1px solid rgba(59,130,246,0.2);
+    border-radius: 16px;
+    padding: 0;
+    margin-bottom: 1.25rem;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+
+.pre-search-option {
+    flex: 1;
+    padding: 0.85rem 1.5rem;
+    border-right: 1px solid rgba(255,255,255,0.06);
+}
+
+.pre-search-option:last-child { border-right: none; }
+
+.pso-toggle-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.pso-toggle-group .toggle-container {
+    gap: 0.6rem;
+}
+
+.pso-icon {
+    width: 15px;
+    height: 15px;
+    color: #60a5fa;
+    flex-shrink: 0;
+}
+
+.pso-hint {
+    font-size: 0.72rem;
+    color: rgba(148,163,184,0.7);
+}
+
+.pre-search-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    padding: 0.85rem 1.5rem;
+    justify-content: center;
+}
+
+.pso-stat {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.75rem;
+    color: rgba(148,163,184,0.65);
+    font-weight: 500;
+}
+
+.pso-stat svg { width: 13px; height: 13px; flex-shrink: 0; color: #3b82f6; }
+
+/* ======================================================
+   GRAD-CAM MODAL PANEL
+   ====================================================== */
+.gradcam-panel {
+    background: rgba(5,12,25,0.8);
+    border: 1px solid rgba(239,68,68,0.2);
+    border-radius: 14px;
+    padding: 1.1rem 1.25rem;
+    margin-bottom: 1.25rem;
+}
+
+.gradcam-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.9rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #fca5a5;
+}
+
+.gradcam-header svg { width: 16px; height: 16px; color: #ef4444; flex-shrink: 0; }
+
+.gradcam-badge {
+    font-size: 0.65rem;
+    background: rgba(239,68,68,0.15);
+    border: 1px solid rgba(239,68,68,0.35);
+    color: #fca5a5;
+    border-radius: 20px;
+    padding: 0.1rem 0.5rem;
+    letter-spacing: 0.05em;
+    font-weight: 700;
+}
+
+.gradcam-spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(239,68,68,0.2);
+    border-top-color: #ef4444;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    display: none;
+    margin-left: auto;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.gradcam-content {
+    position: relative;
+}
+
+.gradcam-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    height: 60px;
+    color: rgba(148,163,184,0.5);
+    font-size: 0.8rem;
+}
+
+.gradcam-placeholder svg { width: 18px; height: 18px; opacity: 0.5; }
+
+.gradcam-result-img {
+    width: 100%;
+    max-height: 220px;
+    object-fit: contain;
+    border-radius: 10px;
+    border: 1px solid rgba(239,68,68,0.15);
+}
+
+.gradcam-legend {
+    display: flex;
+    gap: 1rem;
+    margin-top: 0.6rem;
+    flex-wrap: wrap;
+}
+
+.gl-item {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.15rem 0.55rem;
+    border-radius: 20px;
+}
+
+.gl-item.high { background: rgba(239,68,68,0.15); color: #fca5a5; }
+.gl-item.mid  { background: rgba(234,179,8,0.15);  color: #fde047; }
+.gl-item.low  { background: rgba(59,130,246,0.15); color: #93c5fd; }
+
+/* ======================================================
+   MODAL HEADER ACTIONS
+   ====================================================== */
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.modal-header h3 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.modal-header h3 svg { width: 18px; height: 18px; color: #3b82f6; }
+
+.modal-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.modal-action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.7);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.modal-action-btn:hover {
+    background: rgba(59,130,246,0.15);
+    border-color: rgba(59,130,246,0.4);
+    color: white;
+}
+
+.modal-action-btn svg { width: 15px; height: 15px; }
+
+/* Result card download button */
+.btn-download {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: rgba(59,130,246,0.1);
+    border: 1px solid rgba(59,130,246,0.25);
+    border-radius: 8px;
+    color: #93c5fd;
+    padding: 0.35rem 0.7rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Outfit', sans-serif;
+}
+
+.btn-download:hover {
+    background: rgba(59,130,246,0.2);
+    border-color: #3b82f6;
+    color: white;
+}
+
+.btn-download svg { width: 12px; height: 12px; }

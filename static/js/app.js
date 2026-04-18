@@ -12,6 +12,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const resultsSection    = document.getElementById('results-section');
     const resultsGrid       = document.getElementById('results-grid');
     const xaiToggle         = document.getElementById('xai-toggle');
+    const xaiTogglePre      = document.getElementById('xai-toggle-pre');
+    const gradcamPanel      = document.getElementById('gradcam-panel');
+    const gradcamImg        = document.getElementById('gradcam-img');
+    const gradcamPlaceholder= document.getElementById('gradcam-placeholder');
+    const gradcamSpinner    = document.getElementById('gradcam-spinner');
+    const modalDownloadBtn  = document.getElementById('modal-download-btn');
     const yoloControls      = document.getElementById('yolo-controls');
     const tabGlobal         = document.getElementById('tab-global');
     const tabYolo           = document.getElementById('tab-yolo');
@@ -447,6 +453,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         <button class="btn-compare" data-index="${i}">
                             <i data-lucide="columns-2"></i> Compare
                         </button>
+                        <button class="btn-download" data-path="${imgPath}" title="Download image">
+                            <i data-lucide="download"></i>
+                        </button>
                         <button class="btn-thumb up" data-path="${imgPath}" data-rating="1">
                             <i data-lucide="thumbs-up"></i>
                         </button>
@@ -481,7 +490,24 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
-        if (xaiToggle.checked) document.body.classList.add('xai-active');
+        document.querySelectorAll('.btn-download').forEach(btn => {
+            btn.addEventListener('click', async e => {
+                e.stopPropagation();
+                const path = btn.dataset.path;
+                try {
+                    const res  = await fetch(`/dataset/${path}`);
+                    const blob = await res.blob();
+                    const a    = document.createElement('a');
+                    a.href     = URL.createObjectURL(blob);
+                    a.download = path.split('/').pop() || 'image.jpg';
+                    a.click();
+                    URL.revokeObjectURL(a.href);
+                    gsap.fromTo(btn, { scale: 0.8 }, { scale: 1, duration: 0.4, ease: 'elastic.out(1.2, 0.5)' });
+                } catch(err) {}
+            });
+        });
+
+        if (xaiToggle && xaiToggle.checked) document.body.classList.add('xai-active');
     }
 
     /* ── Sort Results ──────────────────────────────────── */
@@ -535,11 +561,18 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    /* ── XAI Toggle ────────────────────────────────────── */
-    xaiToggle.addEventListener('change', function () {
-        if (this.checked) document.body.classList.add('xai-active');
+    /* ── XAI Toggle (sync both pre-search and results toggles) ── */
+    function applyXaiState(checked) {
+        if (checked) document.body.classList.add('xai-active');
         else document.body.classList.remove('xai-active');
-    });
+        if (xaiToggle)    xaiToggle.checked    = checked;
+        if (xaiTogglePre) xaiTogglePre.checked = checked;
+    }
+
+    if (xaiToggle) xaiToggle.addEventListener('change', function () { applyXaiState(this.checked); });
+    if (xaiTogglePre) {
+        xaiTogglePre.addEventListener('change', function () { applyXaiState(this.checked); });
+    }
 
     /* ── Feature Tabs ──────────────────────────────────── */
     if (tabGlobal && tabYolo) {
@@ -647,6 +680,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function fetchExplanation(match) {
+        /* Reset Grad-CAM panel */
+        if (gradcamImg)        { gradcamImg.style.display = 'none'; gradcamImg.src = ''; }
+        if (gradcamPlaceholder){ gradcamPlaceholder.style.display = 'flex'; }
+        if (gradcamSpinner)    { gradcamSpinner.style.display = 'inline-block'; }
+
         try {
             const res = await fetch('/api/explain', {
                 method: 'POST',
@@ -661,18 +699,67 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             const data = await res.json();
             if (data.explanation) breakdownExplanation.textContent = data.explanation;
+
+            /* Show Grad-CAM heatmap in modal */
+            if (data.heatmap_path && gradcamImg && gradcamPlaceholder) {
+                gradcamImg.onload = () => {
+                    gradcamPlaceholder.style.display = 'none';
+                    gradcamImg.style.display = 'block';
+                    if (gradcamSpinner) gradcamSpinner.style.display = 'none';
+                    gsap.fromTo(gradcamImg, { opacity: 0, scale: 0.97 }, { opacity: 1, scale: 1, duration: 0.4, ease: 'power2.out' });
+                };
+                gradcamImg.onerror = () => {
+                    gradcamPlaceholder.innerHTML = '<i data-lucide="alert-circle"></i><span>Heatmap unavailable</span>';
+                    if (gradcamSpinner) gradcamSpinner.style.display = 'none';
+                    lucide.createIcons();
+                };
+                gradcamImg.src = '/' + data.heatmap_path;
+            } else {
+                if (gradcamPlaceholder) gradcamPlaceholder.innerHTML = '<i data-lucide="info"></i><span>Heatmap generated on next search with XAI enabled</span>';
+                if (gradcamSpinner) gradcamSpinner.style.display = 'none';
+                lucide.createIcons();
+            }
         } catch (e) {
             breakdownExplanation.textContent = 'Unable to fetch explanation.';
+            if (gradcamPlaceholder) gradcamPlaceholder.innerHTML = '<i data-lucide="wifi-off"></i><span>Connection error</span>';
+            if (gradcamSpinner) gradcamSpinner.style.display = 'none';
+            lucide.createIcons();
         }
     }
 
-    modalClose.addEventListener('click', () => {
+    function closeModal() {
         gsap.to('.modal-panel', { scale: 0.95, opacity: 0, duration: 0.2, onComplete: () => {
             compareModal.classList.add('hidden');
             gsap.set('.modal-panel', { scale: 1, opacity: 1 });
         }});
+    }
+
+    modalClose.addEventListener('click', closeModal);
+    compareModal.addEventListener('click', e => { if (e.target === compareModal) closeModal(); });
+
+    /* Keyboard shortcuts */
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && !compareModal.classList.contains('hidden')) closeModal();
+        if (e.key === 'Enter' && document.activeElement === document.body && !fileInput.files.length) fileInput.click();
     });
-    compareModal.addEventListener('click', e => { if (e.target === compareModal) modalClose.click(); });
+
+    /* Download result image from modal */
+    if (modalDownloadBtn) {
+        modalDownloadBtn.addEventListener('click', async () => {
+            if (!activeCompareResult) return;
+            const url = `/dataset/${activeCompareResult.image_path}`;
+            try {
+                const res  = await fetch(url);
+                const blob = await res.blob();
+                const a    = document.createElement('a');
+                a.href     = URL.createObjectURL(blob);
+                a.download = activeCompareResult.image_path.split('/').pop() || 'result.jpg';
+                a.click();
+                URL.revokeObjectURL(a.href);
+                gsap.fromTo(modalDownloadBtn, { scale: 0.85 }, { scale: 1, duration: 0.4, ease: 'elastic.out(1.2, 0.5)' });
+            } catch(e) {}
+        });
+    }
 
     btnFeedbackUp.addEventListener('click', () => {
         if (activeCompareResult) {

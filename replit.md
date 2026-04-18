@@ -52,6 +52,19 @@ A production-grade AI-powered visual similarity search system. Upload any image 
 ## Environment Variables
 - `SESSION_SECRET` — Flask session secret key (set in Replit Secrets)
 
+## Recent Polishing (April 2026)
+- **CSS**: Appended `.pre-search-bar`, `.gradcam-panel`, `.gradcam-header`, `.gradcam-content`, `.gradcam-result-img`, `.gradcam-legend`, `.gl-item`, `.modal-header-actions`, `.modal-action-btn`, `.btn-download`, `.pso-*` blocks to astravision.css
+- **Download button**: Added per-result-card download button (`.btn-download`) in `renderResultCards()`; fetches `/dataset/<path>` and triggers browser download with elastic GSAP bounce animation
+- **Grad-CAM modal integration**: Heatmap panel, pre-search XAI toggle (#xai-toggle-pre), dual-toggle sync via `applyXaiState()`, keyboard shortcuts (Esc/Enter), modal download button
+- **drawSVG fix**: Replaced paid Club GSAP `DrawSVGPlugin` usage in `auth-animations.js` with free `strokeDashoffset` animation — eliminates console warnings
+- **Draggable fix**: Added GSAP Draggable CDN to team.html; previously only gsap.min.js was loaded
+- **View-switching bug**: Removed Tailwind `hidden` class from #view-analytics and #view-history (was forcing display:none !important)
+
+## Known Constraints
+- WebGL blocked in Replit iframe — Three.js renderers must NOT be reintroduced
+- Tailwind `hidden` class = `display:none !important`, cannot be used on toggled views
+- DrawSVGPlugin is a paid Club GSAP plugin — use strokeDashoffset instead
+
 ## Notes
 - Uses `opencv-python-headless` for server compatibility
 - numpy pinned to 1.26.4 for compatibility between tensorflow, faiss-cpu, and opencv
