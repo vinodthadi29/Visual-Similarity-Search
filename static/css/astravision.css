@@ -243,13 +243,13 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.7px;
-    color: rgba(148, 163, 184, 0.8);
+    color: #cbd5e1;
 }
 
 .stat-value {
-    font-size: 1.05rem;
-    font-weight: 700;
-    color: #f1f5f9;
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #ffffff;
 }
 
 .stat-value.accent { color: #60a5fa; }
@@ -1445,32 +1445,13 @@
 .pre-search-bar {
     display: flex;
     align-items: center;
-    gap: 0;
+    justify-content: center;
     background: rgba(15,23,42,0.8);
     border: 1px solid rgba(59,130,246,0.2);
-    border-radius: 16px;
-    padding: 0;
+    border-radius: 14px;
+    padding: 0.7rem 1.5rem;
     margin-bottom: 1.25rem;
-    overflow: hidden;
     box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-}
-
-.pre-search-option {
-    flex: 1;
-    padding: 0.85rem 1.5rem;
-    border-right: 1px solid rgba(255,255,255,0.06);
-}
-
-.pre-search-option:last-child { border-right: none; }
-
-.pso-toggle-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.3rem;
-}
-
-.pso-toggle-group .toggle-container {
-    gap: 0.6rem;
 }
 
 .pso-icon {
@@ -1480,16 +1461,11 @@
     flex-shrink: 0;
 }
 
-.pso-hint {
-    font-size: 0.72rem;
-    color: rgba(148,163,184,0.7);
-}
-
 .pre-search-stats {
     display: flex;
-    flex-direction: column;
-    gap: 0.4rem;
-    padding: 0.85rem 1.5rem;
+    flex-direction: row;
+    align-items: center;
+    gap: 2rem;
     justify-content: center;
 }
 

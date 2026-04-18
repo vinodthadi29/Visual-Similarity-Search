@@ -49,49 +49,18 @@
                 <button class="view-tab active" data-view="search">
                     <i data-lucide="scan-search"></i> Search
                 </button>
-                <button class="view-tab" data-view="analytics">
-                    <i data-lucide="bar-chart-3"></i> Analytics
-                </button>
-                <button class="view-tab" data-view="history">
-                    <i data-lucide="clock"></i> History
-                </button>
             </div>
         </header>
 
         <!-- === SEARCH VIEW === -->
         <div id="view-search" class="view active">
 
-            <!-- Pre-search Options Bar -->
+            <!-- Pre-search Engine Info Bar -->
             <div class="pre-search-bar">
-                <div class="pre-search-option">
-                    <div class="pso-toggle-group">
-                        <div class="toggle-container">
-                            <i data-lucide="flame" class="pso-icon"></i>
-                            <span class="toggle-label">Grad-CAM XAI</span>
-                            <label class="premium-switch">
-                                <input type="checkbox" id="xai-toggle-pre">
-                                <span class="switch-slider"></span>
-                            </label>
-                        </div>
-                        <span class="pso-hint">Visualize neural attention heatmaps on results</span>
-                    </div>
-                </div>
-                <div class="pre-search-option">
-                    <div class="pso-toggle-group">
-                        <div class="toggle-container">
-                            <i data-lucide="cpu" class="pso-icon"></i>
-                            <span class="toggle-label">Deep Object Scan</span>
-                            <label class="premium-switch">
-                                <input type="checkbox" id="yolo-pre-toggle">
-                                <span class="switch-slider"></span>
-                            </label>
-                        </div>
-                        <span class="pso-hint">YOLOv8 region-of-interest search</span>
-                    </div>
-                </div>
                 <div class="pre-search-stats">
                     <span class="pso-stat"><i data-lucide="database"></i> 9,144 images indexed</span>
                     <span class="pso-stat"><i data-lucide="zap"></i> MobileNetV2 + FAISS</span>
+                    <span class="pso-stat"><i data-lucide="cpu"></i> YOLOv8 · Hybrid Similarity</span>
                 </div>
             </div>
 
@@ -187,13 +156,6 @@
                         <button id="export-btn" class="export-btn" title="Export results as JSON">
                             <i data-lucide="download"></i> Export
                         </button>
-                        <div class="toggle-container" id="xai-controls">
-                            <span class="toggle-label">Grad-CAM</span>
-                            <label class="premium-switch">
-                                <input type="checkbox" id="xai-toggle">
-                                <span class="switch-slider"></span>
-                            </label>
-                        </div>
                     </div>
                 </div>
 
@@ -204,113 +166,6 @@
             </section>
         </div>
 
-        <!-- === ANALYTICS VIEW === -->
-        <div id="view-analytics" class="view">
-            <div class="analytics-header">
-                <h2>Search Analytics</h2>
-                <p>Visual embedding map, color intelligence, and category insights from your last search.</p>
-                <p class="analytics-hint" id="analytics-hint">Run a search first to populate the analytics dashboard.</p>
-            </div>
-
-            <!-- Row 1: Embedding Map + Stats -->
-            <div class="analytics-row">
-                <!-- 2D Embedding Scatter -->
-                <div class="analytics-panel scatter-panel">
-                    <div class="panel-header">
-                        <i data-lucide="scatter-chart"></i>
-                        <h4>Embedding Space Map</h4>
-                        <span class="panel-badge">PCA 2D Projection</span>
-                    </div>
-                    <div class="scatter-wrap" id="scatter-wrap">
-                        <canvas id="scatter-canvas"></canvas>
-                        <div id="scatter-tooltip" class="scatter-tooltip"></div>
-                        <div class="scatter-empty" id="scatter-empty">
-                            <i data-lucide="scatter-chart"></i>
-                            <p>No data yet</p>
-                        </div>
-                    </div>
-                    <div class="scatter-legend">
-                        <div class="sleg"><span class="sleg-dot query"></span>Query</div>
-                        <div class="sleg"><span class="sleg-dot high"></span>&gt;70%</div>
-                        <div class="sleg"><span class="sleg-dot mid"></span>40–70%</div>
-                        <div class="sleg"><span class="sleg-dot low"></span>&lt;40%</div>
-                    </div>
-                </div>
-
-                <!-- Session Stats -->
-                <div class="analytics-panel stats-panel">
-                    <div class="panel-header">
-                        <i data-lucide="activity"></i>
-                        <h4>Session Statistics</h4>
-                        <span class="panel-badge">Live</span>
-                    </div>
-                    <div id="session-stats" class="session-stats">
-                        <div class="stat-tile">
-                            <div class="stat-tile-value" id="stat-total">—</div>
-                            <div class="stat-tile-label">Total Searches</div>
-                        </div>
-                        <div class="stat-tile">
-                            <div class="stat-tile-value" id="stat-avgtime">—</div>
-                            <div class="stat-tile-label">Avg. Process Time</div>
-                        </div>
-                        <div class="stat-tile">
-                            <div class="stat-tile-value" id="stat-topscore">—</div>
-                            <div class="stat-tile-label">Last Top Score</div>
-                        </div>
-                        <div class="stat-tile">
-                            <div class="stat-tile-value" id="stat-results">—</div>
-                            <div class="stat-tile-label">Last Result Count</div>
-                        </div>
-                    </div>
-                    <!-- Color Palette from query -->
-                    <div class="panel-header" style="margin-top:1.5rem">
-                        <i data-lucide="palette"></i>
-                        <h4>Query Color Palette</h4>
-                    </div>
-                    <div id="analytics-palette" class="analytics-palette">
-                        <p class="palette-empty">Upload an image to extract color palette</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Row 2: Category Distribution -->
-            <div class="analytics-panel category-panel" id="category-panel">
-                <div class="panel-header">
-                    <i data-lucide="bar-chart-2"></i>
-                    <h4>Category Distribution</h4>
-                    <span class="panel-badge" id="cat-total-badge"></span>
-                </div>
-                <div id="category-chart" class="category-chart">
-                    <p class="cat-empty">Run a search to see category breakdown</p>
-                </div>
-            </div>
-
-            <!-- Row 3: Similarity Distribution -->
-            <div class="analytics-panel sim-panel" id="sim-panel">
-                <div class="panel-header">
-                    <i data-lucide="trending-up"></i>
-                    <h4>Similarity Score Distribution</h4>
-                    <span class="panel-badge" id="sim-panel-badge"></span>
-                </div>
-                <div id="sim-histogram" class="sim-histogram">
-                    <p class="cat-empty">Run a search to see score distribution</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- === HISTORY VIEW === -->
-        <div id="view-history" class="view">
-            <div class="history-header">
-                <h2>Search History</h2>
-                <p>Your recent visual searches</p>
-                <div id="history-summary" class="history-summary hidden"></div>
-            </div>
-            <div id="history-grid" class="history-grid">
-                <div class="history-loading">
-                    <div class="spinner"></div>
-                </div>
-            </div>
-        </div>
 
     </div>
 

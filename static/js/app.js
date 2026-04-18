@@ -62,8 +62,6 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.classList.add('active');
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.getElementById(`view-${view}`).classList.add('active');
-            if (view === 'history')   loadHistory();
-            if (view === 'analytics') initAnalytics();
             lucide.createIcons();
         });
     });
@@ -175,7 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
         showPipeline();
         const formData = new FormData();
         formData.append('query_image', file);
-        formData.append('xai_enabled', xaiToggle.checked ? 'true' : 'false');
+        formData.append('xai_enabled', (xaiToggle && xaiToggle.checked) ? 'true' : 'false');
 
         let response;
         try {
@@ -345,7 +343,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const formData = new FormData();
         formData.append('query_image', fileInput.files[0]);
         formData.append('crop_data', JSON.stringify(box));
-        formData.append('xai_enabled', xaiToggle.checked ? 'true' : 'false');
+        formData.append('xai_enabled', (xaiToggle && xaiToggle.checked) ? 'true' : 'false');
 
         try {
             const response = await fetch('/api/stream-search', { method: 'POST', body: formData });
