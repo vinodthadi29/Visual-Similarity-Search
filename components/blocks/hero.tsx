@@ -5,7 +5,7 @@ import { motion } from "framer-motion"
 import { cn } from "@/lib/utils"
 // Ensure we export this file.
 
-export interface HeroProps extends React.HTMLAttributes<HTMLElement> {
+export interface HeroProps extends Omit<React.HTMLAttributes<HTMLElement>, 'title'> {
     gradient?: boolean
     blur?: boolean
     title: string | React.ReactNode
