@@ -1,0 +1,21 @@
+{
+  "settings_version": "0.0.6",
+  "datasets_dir": "/home/runner/datasets",
+  "weights_dir": "/home/runner/workspace/weights",
+  "runs_dir": "/home/runner/workspace/runs",
+  "uuid": "f10e51e7e7bf7cfd01c1f02d41154f910d6a7c864b436cf9f633fd97272c767d",
+  "sync": true,
+  "api_key": "",
+  "openai_api_key": "",
+  "clearml": true,
+  "comet": true,
+  "dvc": true,
+  "hub": true,
+  "mlflow": true,
+  "neptune": true,
+  "raytune": true,
+  "tensorboard": false,
+  "wandb": false,
+  "vscode_msg": true,
+  "openvino_msg": true
+}

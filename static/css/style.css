@@ -12,7 +12,7 @@
     --accent-secondary: #8b5cf6;
     /* Violet 500 */
     --text-glow: #f8fafc;
-    --text-muted: #94a3b8;
+    --text-muted: #ffffff;
     --success: #10b981;
     --error: #ef4444;
     --radius-premium: 24px;
@@ -786,9 +786,9 @@ body.yolo-active #bounding-boxes-container {
 }
 
 .toggle-label {
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--text-muted);
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--text-glow);
 }
 
 #roi-instruction .action-link {
