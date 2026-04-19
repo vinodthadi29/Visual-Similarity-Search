@@ -62,6 +62,8 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.classList.add('active');
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.getElementById(`view-${view}`).classList.add('active');
+            if (view === 'history')   loadHistory();
+            if (view === 'analytics') initAnalytics();
             lucide.createIcons();
         });
     });
