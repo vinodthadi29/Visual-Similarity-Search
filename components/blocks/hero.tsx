@@ -3,6 +3,7 @@
 import * as React from "react"
 import { motion } from "framer-motion"
 import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
 // Ensure we export this file.
 
 export interface HeroProps extends Omit<React.HTMLAttributes<HTMLElement>, 'title'> {
@@ -138,7 +139,11 @@ const Hero = React.forwardRef<HTMLElement, HeroProps>(
                         )}
 
                         <div className={cn("flex gap-4 mt-8", actionsClassName)}>
-                            {actions}
+                            {actions?.map((action, index) => (
+                                <Button key={index} variant={action.variant} asChild>
+                                    <a href={action.href}>{action.label}</a>
+                                </Button>
+                            ))}
                         </div>
 
                     </div>
